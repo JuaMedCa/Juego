@@ -13,8 +13,15 @@ public class AudioManager : MonoBehaviour
             instance = this;
     }
 
+    void Start()
+    {
+        float savedVolume = PlayerPrefs.GetFloat("volume", 1f);
+        audioSource.volume = savedVolume;
+    }
+
     public void SetVolume(float volume)
     {
         audioSource.volume = volume;
+        PlayerPrefs.SetFloat("volume", volume);
     }
 }
