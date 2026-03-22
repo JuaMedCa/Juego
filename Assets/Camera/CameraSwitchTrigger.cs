@@ -8,6 +8,7 @@ public class CameraSwitchTrigger : MonoBehaviour
     public PlayerMovemnt playerMovement;
 
     CinemachinePOV fpsPOV;
+    bool isFpsActive = false; // Bandera para alternar entre cámaras
 
     void Awake()
     {
@@ -26,27 +27,30 @@ public class CameraSwitchTrigger : MonoBehaviour
     {
         if (!other.CompareTag("Player")) return;
 
-        ResetFpsLook(); // <-- clave
+        // Alternar entre cámaras al pasar por el trigger
+        if (isFpsActive)
+        {
+            // Cambiar a cámara isométrica
+            isoCam.Priority = 20;
+            fpsCam.Priority = 0;
 
-        fpsCam.Priority = 20;
-        isoCam.Priority = 0;
+            playerMovement.ExitFPS();
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            // Cambiar a cámara FPS
+            ResetFpsLook();
+            fpsCam.Priority = 20;
+            isoCam.Priority = 0;
 
-        playerMovement.EnterFPS();
+            playerMovement.EnterFPS();
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (!other.CompareTag("Player")) return;
-
-        isoCam.Priority = 20;
-        fpsCam.Priority = 0;
-
-        playerMovement.ExitFPS();
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        // Alternar el estado de la cámara
+        isFpsActive = !isFpsActive;
     }
 }

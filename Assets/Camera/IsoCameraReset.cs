@@ -20,6 +20,8 @@ public class IsoCameraReset : MonoBehaviour
         vcam = GetComponent<CinemachineVirtualCamera>();
         framing = vcam.GetCinemachineComponent<CinemachineFramingTransposer>();
 
+      
+
         // Guardar estado ISO
         screenX = framing.m_ScreenX;
         screenY = framing.m_ScreenY;
@@ -30,6 +32,8 @@ public class IsoCameraReset : MonoBehaviour
         distance = framing.m_CameraDistance;
 
         fieldOfView = vcam.m_Lens.FieldOfView; // 🔥
+
+
     }
 
     public void Restore()
