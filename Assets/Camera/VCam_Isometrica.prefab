@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 259584474574446378}
   - component: {fileID: 3672899755771069053}
+  - component: {fileID: 7962375884861762301}
   m_Layer: 0
   m_Name: VCam_Isometrica
   m_TagString: Player
@@ -72,6 +73,21 @@ MonoBehaviour:
         m_Calls: []
   m_LegacyBlendHint: 0
   m_ComponentOwner: {fileID: 7378394370943122765}
+--- !u!114 &7962375884861762301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 495147295782867084}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8f6d4df90654b44856d76e2c632c11f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  mouseSensitivity: 6
+  requireRightMouseButton: 1
+  invertX: 0
 --- !u!1 &7261862637753830437
 GameObject:
   m_ObjectHideFlags: 0

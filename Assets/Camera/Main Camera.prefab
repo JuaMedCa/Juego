@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3582669605552737156}
   - component: {fileID: 2390964139476352506}
   - component: {fileID: 8970976371448014874}
+  - component: {fileID: 4826137742140131671}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -44,7 +45,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0.019607844, g: 0.03137255, b: 0.07450981, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -127,3 +128,22 @@ MonoBehaviour:
   m_CameraActivatedEvent:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &4826137742140131671
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2669832370698605087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d4f7ee7af2a4eb388a75c4234190fca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameTitle: DARK FALL
+  logoSprite: {fileID: 21300000, guid: 51ecc92d8669e8d4aa6c87afa66088e2, type: 3}
+  backgroundSprite: {fileID: 21300000, guid: 4e945c3956a836249af9014362bc444b, type: 3}
+  backgroundTint: {r: 1, g: 1, b: 1, a: 0.9}
+  backgroundFallbackColor: {r: 0.04, g: 0.05, b: 0.08, a: 1}
+  defaultMasterVolume: 0.8
+  defaultCameraSensitivity: 6
