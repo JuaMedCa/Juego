@@ -19,18 +19,11 @@ public class CameraSwitchTrigger : MonoBehaviour
     private static bool isMenuOpen = true;
     private static CameraSwitchTrigger activeController;
 
-    private CinemachinePOV fpsPOV;
-
     public static CameraMode CurrentMode => currentMode;
     public static bool IsFirstPersonActive => isFpsApplied;
 
     void Awake()
     {
-        if (fpsCam != null)
-        {
-            fpsPOV = fpsCam.GetCinemachineComponent<CinemachinePOV>();
-        }
-
         RegisterAsActiveController();
     }
 
@@ -74,18 +67,15 @@ public class CameraSwitchTrigger : MonoBehaviour
 
     private void RegisterAsActiveController()
     {
-        if (activeController == null && isoCam != null && fpsCam != null && playerMovement != null)
+        if (!HasRequiredReferences())
+        {
+            return;
+        }
+
+        if (activeController == null || activeController == this || !activeController.HasRequiredReferences())
         {
             activeController = this;
         }
-    }
-
-    void ResetFpsLook()
-    {
-        if (fpsPOV == null) return;
-
-        fpsPOV.m_HorizontalAxis.Value = 0f; // yaw
-        fpsPOV.m_VerticalAxis.Value = 0f;   // pitch
     }
 
     private void OnTriggerEnter(Collider other)
@@ -93,7 +83,7 @@ public class CameraSwitchTrigger : MonoBehaviour
         if (!other.CompareTag("Player")) return;
 
         insideTriggerCount++;
-        RefreshCameraState();
+        RefreshGlobalCameraState();
     }
 
     private void OnTriggerExit(Collider other)
@@ -101,53 +91,55 @@ public class CameraSwitchTrigger : MonoBehaviour
         if (!other.CompareTag("Player")) return;
 
         insideTriggerCount = Mathf.Max(0, insideTriggerCount - 1);
-        RefreshCameraState();
+        RefreshGlobalCameraState();
     }
 
     private void RefreshCameraState()
     {
+        if (!HasRequiredReferences())
+        {
+            ApplyCursorState();
+            return;
+        }
+
         bool shouldUseFps = currentMode == CameraMode.PrimeraPersona || insideTriggerCount > 0;
 
         if (shouldUseFps != isFpsApplied)
         {
-            if (shouldUseFps)
+            bool changed = shouldUseFps ? ActivateFps() : ActivateIsometric();
+            if (changed)
             {
-                ActivateFps();
+                isFpsApplied = shouldUseFps;
             }
-            else
-            {
-                ActivateIsometric();
-            }
-
-            isFpsApplied = shouldUseFps;
         }
 
         ApplyCursorState();
     }
 
-    private void ActivateFps()
+    private bool ActivateFps()
     {
-        if (fpsCam == null || isoCam == null || playerMovement == null)
+        if (!HasRequiredReferences())
         {
-            return;
+            return false;
         }
 
-        ResetFpsLook();
         fpsCam.Priority = 20;
         isoCam.Priority = 0;
         playerMovement.EnterFPS();
+        return true;
     }
 
-    private void ActivateIsometric()
+    private bool ActivateIsometric()
     {
-        if (fpsCam == null || isoCam == null || playerMovement == null)
+        if (!HasRequiredReferences())
         {
-            return;
+            return false;
         }
 
         isoCam.Priority = 20;
         fpsCam.Priority = 0;
         playerMovement.ExitFPS();
+        return true;
     }
 
     private void ApplyCursorState()
@@ -169,5 +161,10 @@ public class CameraSwitchTrigger : MonoBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
+    }
+
+    private bool HasRequiredReferences()
+    {
+        return isoCam != null && fpsCam != null && playerMovement != null;
     }
 }

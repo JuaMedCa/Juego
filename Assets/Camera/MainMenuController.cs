@@ -291,17 +291,17 @@ public class MainMenuController : MonoBehaviour
         menuPanelRect.anchorMin = new Vector2(0.5f, 0.5f);
         menuPanelRect.anchorMax = new Vector2(0.5f, 0.5f);
         menuPanelRect.pivot = new Vector2(0.5f, 0.5f);
-        menuPanelRect.sizeDelta = new Vector2(700f, 650f);
-        menuPanelRect.anchoredPosition = new Vector2(0f, 20f);
+        menuPanelRect.sizeDelta = new Vector2(700f, 740f);
+        menuPanelRect.anchoredPosition = new Vector2(0f, 10f);
         menuPanelBasePos = menuPanelRect.anchoredPosition;
         RegisterGlitchTarget(menuPanelRect);
 
         AddOutline(centerPanel, new Color(1f, 1f, 1f, 0.04f), new Vector2(1f, -1f));
 
         bool hasLogo = logoSprite != null;
-        float subtitleY = hasLogo ? -330f : -270f;
-        float separatorY = hasLogo ? -375f : -315f;
-        float firstButtonY = hasLogo ? -440f : -380f;
+        float subtitleY = hasLogo ? -312f : -248f;
+        float separatorY = hasLogo ? -356f : -292f;
+        float firstButtonY = hasLogo ? -410f : -346f;
 
         if (hasLogo)
         {
@@ -376,22 +376,22 @@ public class MainMenuController : MonoBehaviour
         optionsPanel = CreatePopupCard("OptionsPanel", canvasObject.transform, new Vector2(0.83f, 0.52f), new Vector2(430f, 340f));
         RegisterGlitchTarget(optionsPanel.GetComponent<RectTransform>());
 
-        CreateText("OptionsTitle", optionsPanel.transform, "OPCIONES", 28, FontStyle.Bold, titleColor, TextAnchor.UpperLeft, new Vector2(24f, -22f), new Vector2(200f, 40f), false);
+        CreateText("OptionsTitle", optionsPanel.transform, "OPCIONES", 28, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -22f), new Vector2(280f, 40f), false);
         CreateSeparator(optionsPanel.transform, new Vector2(0f, -65f), new Vector2(360f, 2f));
         volumeValueText = CreateStepperRow(optionsPanel.transform, "VOLUMEN", new Vector2(26f, -110f), () => ChangeVolume(-0.1f), () => ChangeVolume(0.1f));
         sensitivityValueText = CreateStepperRow(optionsPanel.transform, "SENSIBILIDAD", new Vector2(26f, -175f), () => ChangeSensitivity(-0.5f), () => ChangeSensitivity(0.5f));
-        CreateText("CameraModeLabel", optionsPanel.transform, "MODO CAMARA", 17, FontStyle.Bold, textColor, TextAnchor.MiddleLeft, new Vector2(24f, -230f), new Vector2(220f, 30f), false);
-        CreateModeOptionButton("AerialModeButton", optionsPanel.transform, "AEREA", new Vector2(24f, -270f), new Vector2(120f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.Aerea), out aerialModeButtonImage, out aerialModeButtonText);
-        CreateModeOptionButton("FirstPersonModeButton", optionsPanel.transform, "PRIMERA PERSONA", new Vector2(156f, -270f), new Vector2(200f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.PrimeraPersona), out firstPersonModeButtonImage, out firstPersonModeButtonText);
+        CreateTopLeftText("CameraModeLabel", optionsPanel.transform, "MODO CAMARA", 17, FontStyle.Bold, textColor, TextAnchor.MiddleLeft, new Vector2(26f, -234f), new Vector2(220f, 30f), false);
+        CreateModeOptionButton("AerialModeButton", optionsPanel.transform, "AEREA", new Vector2(26f, -274f), new Vector2(154f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.Aerea), out aerialModeButtonImage, out aerialModeButtonText);
+        CreateModeOptionButton("FirstPersonModeButton", optionsPanel.transform, "PRIMERA PERSONA", new Vector2(194f, -274f), new Vector2(210f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.PrimeraPersona), out firstPersonModeButtonImage, out firstPersonModeButtonText);
         optionsPanel.SetActive(false);
 
         extrasPanel = CreatePopupCard("ExtrasPanel", canvasObject.transform, new Vector2(0.83f, 0.52f), new Vector2(470f, 320f));
         RegisterGlitchTarget(extrasPanel.GetComponent<RectTransform>());
 
-        CreateText("ExtrasTitle", extrasPanel.transform, "EXTRAS", 28, FontStyle.Bold, titleColor, TextAnchor.UpperLeft, new Vector2(24f, -22f), new Vector2(200f, 40f), false);
+        CreateText("ExtrasTitle", extrasPanel.transform, "EXTRAS", 28, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -22f), new Vector2(260f, 40f), false);
         CreateSeparator(extrasPanel.transform, new Vector2(0f, -65f), new Vector2(390f, 2f));
 
-        Text extrasBody = CreateText(
+        Text extrasBody = CreateTopLeftText(
             "ExtrasBody",
             extrasPanel.transform,
             "OBJETIVO\n\nEncuentra una salida.\n\nRECUERDA\n\nNo todo lo que escuches es real.\nNo todo lo que veas está muerto.\n\nCONSEJO\n\nSi el silencio cambia... corre.",
@@ -513,10 +513,10 @@ public class MainMenuController : MonoBehaviour
 
     private Text CreateStepperRow(Transform parent, string label, Vector2 anchoredPosition, UnityEngine.Events.UnityAction onMinus, UnityEngine.Events.UnityAction onPlus)
     {
-        CreateText(label + "Label", parent, label, 18, FontStyle.Bold, textColor, TextAnchor.MiddleLeft, anchoredPosition, new Vector2(180f, 30f), false);
-        CreateCompactButton("-", parent, anchoredPosition + new Vector2(200f, 0f), onMinus);
-        Text valueText = CreateText(label + "Value", parent, "", 18, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, anchoredPosition + new Vector2(260f, 0f), new Vector2(80f, 30f), false);
-        CreateCompactButton("+", parent, anchoredPosition + new Vector2(330f, 0f), onPlus);
+        CreateTopLeftText(label + "Label", parent, label, 18, FontStyle.Bold, textColor, TextAnchor.MiddleLeft, anchoredPosition, new Vector2(170f, 30f), false);
+        CreateCompactButton("-", parent, anchoredPosition + new Vector2(214f, -2f), onMinus);
+        Text valueText = CreateTopLeftText(label + "Value", parent, "", 18, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, anchoredPosition + new Vector2(268f, 0f), new Vector2(64f, 30f), false);
+        CreateCompactButton("+", parent, anchoredPosition + new Vector2(362f, -2f), onPlus);
         return valueText;
     }
 
@@ -651,6 +651,41 @@ public class MainMenuController : MonoBehaviour
         rect.anchorMin = new Vector2(0.5f, 1f);
         rect.anchorMax = new Vector2(0.5f, 1f);
         rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = anchoredPosition;
+        rect.sizeDelta = size;
+
+        Text text = textObject.AddComponent<Text>();
+        text.font = uiFont;
+        text.text = content;
+        text.fontSize = fontSize;
+        text.fontStyle = fontStyle;
+        text.color = color;
+        text.alignment = alignment;
+
+        Shadow shadow = textObject.AddComponent<Shadow>();
+        shadow.effectColor = heavyShadow ? new Color(0f, 0f, 0f, 0.8f) : new Color(0f, 0f, 0f, 0.35f);
+        shadow.effectDistance = heavyShadow ? new Vector2(3f, -3f) : new Vector2(1f, -1f);
+
+        return text;
+    }
+
+    private Text CreateTopLeftText(
+        string name,
+        Transform parent,
+        string content,
+        int fontSize,
+        FontStyle fontStyle,
+        Color color,
+        TextAnchor alignment,
+        Vector2 anchoredPosition,
+        Vector2 size,
+        bool heavyShadow)
+    {
+        GameObject textObject = CreateUiObject(name, parent);
+        RectTransform rect = textObject.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
         rect.anchoredPosition = anchoredPosition;
         rect.sizeDelta = size;
 

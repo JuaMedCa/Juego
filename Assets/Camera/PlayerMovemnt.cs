@@ -17,12 +17,14 @@ public class PlayerMovemnt : MonoBehaviour
     [Tooltip("Asigna aquí el Transform de la Main Camera (la cámara real que mueve Cinemachine).")]
     public Transform fpsCamera;
 
-    private Vector3 forward, right;
     private Animator animator;
+    private Vector3 forward;
+    private Vector3 right;
 
     void Start()
     {
         animator = GetComponent<Animator>();
+        ResolveFpsCamera();
         RecalculateIsoDirections();
     }
 
@@ -31,50 +33,11 @@ public class PlayerMovemnt : MonoBehaviour
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        Vector3 direction = Vector3.zero;
+        Vector3 direction = isFPS
+            ? GetFpsMoveDirection(h, v)
+            : GetIsometricMoveDirection(h, v);
 
-        if (isFPS)
-        {
-            // 1) Hacer que el cuerpo siga el yaw (Y) de la cámara, suave y controlado
-            if (fpsCamera != null)
-            {
-                Vector3 lookDir = fpsCamera.forward;
-                lookDir.y = 0f;
-
-                if (lookDir.sqrMagnitude > 0.0001f)
-                {
-                    Quaternion targetRot = Quaternion.LookRotation(lookDir);
-
-                    float angle = Quaternion.Angle(transform.rotation, targetRot);
-                    if (angle > turnDeadZone)
-                    {
-                        transform.rotation = Quaternion.Slerp(
-                            transform.rotation,
-                            targetRot,
-                            bodyTurnSpeed * Time.deltaTime
-                        );
-                    }
-                }
-            }
-
-            // 2) Movimiento relativo al cuerpo (ya alineado con la cámara)
-            Vector3 f = transform.forward;
-            Vector3 r = transform.right;
-
-            f.y = 0f;
-            r.y = 0f;
-
-            f.Normalize(); 
-            r.Normalize();
-
-            direction = f * v + r * h;
-        }
-        else
-        {
-            RecalculateIsoDirections();   // <- fuerza recalcular al volver a iso
-            direction = right * h + forward * v;
-        }
-
+        direction = Vector3.ClampMagnitude(direction, 1f);
 
         // Animator
         if (animator != null)
@@ -84,7 +47,7 @@ public class PlayerMovemnt : MonoBehaviour
         }
 
         // Movimiento
-        if (direction.magnitude >= 0.1f)
+        if (direction.sqrMagnitude >= 0.01f)
         {
             transform.position += direction * speed * Time.deltaTime;
 
@@ -106,6 +69,7 @@ public class PlayerMovemnt : MonoBehaviour
     public void EnterFPS()
     {
         isFPS = true;
+        ResolveFpsCamera();
     }
 
     public void ExitFPS()
@@ -121,14 +85,108 @@ public class PlayerMovemnt : MonoBehaviour
 
     private void RecalculateIsoDirections()
     {
-        // Direcciones isométricas basadas en la cámara principal actual
-        forward = Camera.main.transform.forward;
-        right = Camera.main.transform.right;
+        Transform viewTransform = ResolveGameplayCamera();
 
-        forward.y = 0f;
-        right.y = 0f;
+        if (viewTransform == null)
+        {
+            forward = GetPlanarDirection(transform.forward);
+            right = GetPlanarDirection(transform.right);
+            return;
+        }
 
-        forward.Normalize();
-        right.Normalize();
+        forward = GetPlanarDirection(viewTransform.forward);
+        right = GetPlanarDirection(viewTransform.right);
+
+        if (forward.sqrMagnitude <= 0.0001f)
+        {
+            forward = GetPlanarDirection(transform.forward);
+        }
+
+        if (right.sqrMagnitude <= 0.0001f)
+        {
+            right = GetPlanarDirection(transform.right);
+        }
+    }
+
+    private Vector3 GetFpsMoveDirection(float h, float v)
+    {
+        Transform viewTransform = ResolveFpsCamera();
+        Vector3 lookForward = viewTransform != null
+            ? GetPlanarDirection(viewTransform.forward)
+            : GetPlanarDirection(transform.forward);
+        Vector3 lookRight = viewTransform != null
+            ? GetPlanarDirection(viewTransform.right)
+            : GetPlanarDirection(transform.right);
+
+        RotateBodyTowards(lookForward);
+        return lookForward * v + lookRight * h;
+    }
+
+    private Vector3 GetIsometricMoveDirection(float h, float v)
+    {
+        RecalculateIsoDirections();
+        return right * h + forward * v;
+    }
+
+    private void RotateBodyTowards(Vector3 lookDirection)
+    {
+        if (lookDirection.sqrMagnitude <= 0.0001f)
+        {
+            return;
+        }
+
+        Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
+        float angle = Quaternion.Angle(transform.rotation, targetRotation);
+
+        if (angle <= turnDeadZone)
+        {
+            return;
+        }
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            bodyTurnSpeed * Time.deltaTime
+        );
+    }
+
+    private Transform ResolveGameplayCamera()
+    {
+        Camera mainCamera = Camera.main;
+        if (mainCamera != null)
+        {
+            return mainCamera.transform;
+        }
+
+        return ResolveFpsCamera();
+    }
+
+    private Transform ResolveFpsCamera()
+    {
+        if (fpsCamera != null && fpsCamera != transform)
+        {
+            return fpsCamera;
+        }
+
+        Camera mainCamera = Camera.main;
+        if (mainCamera != null)
+        {
+            fpsCamera = mainCamera.transform;
+            return fpsCamera;
+        }
+
+        return null;
+    }
+
+    private static Vector3 GetPlanarDirection(Vector3 vector)
+    {
+        vector.y = 0f;
+
+        if (vector.sqrMagnitude > 0.0001f)
+        {
+            vector.Normalize();
+        }
+
+        return vector;
     }
 }
