@@ -86080,6 +86080,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BrickHouse_Mid6
       objectReference: {fileID: 0}
+    - target: {fileID: 182950, guid: a169505b1ca79d04e97789db788de88c, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 495120, guid: a169505b1ca79d04e97789db788de88c, type: 3}
       propertyPath: m_RootOrder
       value: 4714
