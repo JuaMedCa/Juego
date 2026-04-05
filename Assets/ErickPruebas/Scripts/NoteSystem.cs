@@ -3,30 +3,28 @@ using TMPro;
 
 public class NoteSystem : MonoBehaviour
 {
+    [Header("UI")]
     public GameObject interactText;
     public GameObject notePanel;
-    public TMP_Text noteUIText;
+    public TMP_Text noteText;
 
     private InteractableNote currentNote;
-    private bool isReading = false;
+    private PickupItem currentItem;
 
-    void Start()
-    {
-        interactText.SetActive(false);
-        notePanel.SetActive(false);
-    }
+    private bool isReading = false;
 
     void Update()
     {
         if (isReading)
         {
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Escape))
             {
                 CloseNote();
             }
             return;
         }
 
+        // Buscar notas (creo)
         InteractableNote[] notes = FindObjectsOfType<InteractableNote>();
         currentNote = null;
 
@@ -39,13 +37,38 @@ public class NoteSystem : MonoBehaviour
             }
         }
 
+        // Buscar objetos (creo)
+        PickupItem[] items = FindObjectsOfType<PickupItem>();
+        currentItem = null;
+
+        foreach (var item in items)
+        {
+            if (item.playerInside)
+            {
+                currentItem = item;
+                break;
+            }
+        }
+
+        // UI (en proceso)
         if (currentNote != null)
         {
             interactText.SetActive(true);
+            interactText.GetComponent<TMP_Text>().text = "Presiona E para inspeccionar";
 
             if (Input.GetKeyDown(KeyCode.E))
             {
                 OpenNote(currentNote);
+            }
+        }
+        else if (currentItem != null)
+        {
+            interactText.SetActive(true);
+            interactText.GetComponent<TMP_Text>().text = "Presiona E para recoger";
+
+            if (Input.GetKeyDown(KeyCode.E))
+            {
+                Pickup(currentItem);
             }
         }
         else
@@ -56,25 +79,30 @@ public class NoteSystem : MonoBehaviour
 
     void OpenNote(InteractableNote note)
     {
-        notePanel.SetActive(true);
-        noteUIText.text = note.noteData.noteText;
-        interactText.SetActive(false);
         isReading = true;
+
+        notePanel.SetActive(true);
+
+        noteText.text = note.noteData.noteText;
+
+        interactText.SetActive(false);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-
-        Time.timeScale = 0f;
     }
 
     void CloseNote()
     {
-        notePanel.SetActive(false);
         isReading = false;
+
+        notePanel.SetActive(false);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+    }
 
-        Time.timeScale = 1f;
+    void Pickup(PickupItem item)
+    {
+        Destroy(item.gameObject);
     }
 }
