@@ -9,8 +9,6 @@ public class NoteSystem : MonoBehaviour
     public TMP_Text noteText;
 
     private InteractableNote currentNote;
-    private PickupItem currentItem;
-
     private bool isReading = false;
 
     void Update()
@@ -24,7 +22,6 @@ public class NoteSystem : MonoBehaviour
             return;
         }
 
-        // Buscar notas (creo)
         InteractableNote[] notes = FindObjectsOfType<InteractableNote>();
         currentNote = null;
 
@@ -37,20 +34,6 @@ public class NoteSystem : MonoBehaviour
             }
         }
 
-        // Buscar objetos (creo)
-        PickupItem[] items = FindObjectsOfType<PickupItem>();
-        currentItem = null;
-
-        foreach (var item in items)
-        {
-            if (item.playerInside)
-            {
-                currentItem = item;
-                break;
-            }
-        }
-
-        // UI (en proceso)
         if (currentNote != null)
         {
             interactText.SetActive(true);
@@ -59,16 +42,6 @@ public class NoteSystem : MonoBehaviour
             if (Input.GetKeyDown(KeyCode.E))
             {
                 OpenNote(currentNote);
-            }
-        }
-        else if (currentItem != null)
-        {
-            interactText.SetActive(true);
-            interactText.GetComponent<TMP_Text>().text = "Presiona E para recoger";
-
-            if (Input.GetKeyDown(KeyCode.E))
-            {
-                Pickup(currentItem);
             }
         }
         else
@@ -82,7 +55,6 @@ public class NoteSystem : MonoBehaviour
         isReading = true;
 
         notePanel.SetActive(true);
-
         noteText.text = note.noteData.noteText;
 
         interactText.SetActive(false);
@@ -99,10 +71,5 @@ public class NoteSystem : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-    }
-
-    void Pickup(PickupItem item)
-    {
-        Destroy(item.gameObject);
     }
 }

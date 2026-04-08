@@ -5,32 +5,19 @@ using UnityEngine;
 public class PickupItem : MonoBehaviour
 {
     public string itemName = "Tanque de gas";
-    public GameObject mapIconPrefab;
-    private GameObject iconInstance;
-
-    void Start()
-    {
-        if (mapIconPrefab != null)
-        {
-            iconInstance = Instantiate(mapIconPrefab);
-
-            GasIconFollow follow = iconInstance.AddComponent<GasIconFollow>();
-            follow.target = this.transform;
-        }
-
-        if (iconInstance != null)
-        {
-            Destroy(iconInstance);
-        }
-    }
+    public FuelSequenceManager fuelManager;
 
     [HideInInspector]
     public bool playerInside = false;
 
+
     void OnTriggerEnter(Collider other)
     {
+        Debug.Log("Entró algo: " + other.name);
+
         if (other.CompareTag("Player"))
         {
+            Debug.Log("Es el jugador");
             playerInside = true;
         }
     }
@@ -42,5 +29,4 @@ public class PickupItem : MonoBehaviour
             playerInside = false;
         }
     }
-
 }
