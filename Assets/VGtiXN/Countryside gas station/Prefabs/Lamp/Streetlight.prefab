@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8015655954637617995}
   - component: {fileID: 2832921848550818474}
   m_Layer: 0
-  m_Name: Area Light (2)
+  m_Name: Lamp Light (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -24,12 +24,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 203680997867468284}
+  serializedVersion: 2
   m_LocalRotation: {x: 0.0791029, y: -0.8421434, z: 0.52293247, w: 0.10525652}
   m_LocalPosition: {x: -0.1256, y: 7.437, z: -0.4565}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 102906990132383361}
-  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 63.821003, y: -167.62502, z: -3.0080001}
 --- !u!108 &2832921848550818474
 Light:
@@ -40,19 +41,19 @@ Light:
   m_GameObject: {fileID: 203680997867468284}
   m_Enabled: 1
   serializedVersion: 10
-  m_Type: 3
+  m_Type: 0
   m_Shape: 0
-  m_Color: {r: 0.990566, g: 0.89448273, b: 0.80833924, a: 1}
-  m_Intensity: 15
-  m_Range: 35
-  m_SpotAngle: 30
-  m_InnerSpotAngle: 21.80208
+  m_Color: {r: 1, g: 0.84210527, b: 0.627451, a: 1}
+  m_Intensity: 0.5
+  m_Range: 20
+  m_SpotAngle: 82
+  m_InnerSpotAngle: 58
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0
     m_Bias: 0.05
     m_NormalBias: 0.4
     m_NearPlane: 0.2
@@ -77,7 +78,7 @@ Light:
   m_Cookie: {fileID: 0}
   m_DrawHalo: 0
   m_Flare: {fileID: 0}
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -85,11 +86,12 @@ Light:
   m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 0.33991137, y: 0.23013787}
-  m_BounceIntensity: 1.2
+  m_BounceIntensity: 0.35
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
 --- !u!1 &731353285256975419
@@ -118,16 +120,17 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 731353285256975419}
+  serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2205892328230955029}
   - {fileID: 8919997389292832815}
   - {fileID: 8015655954637617995}
   - {fileID: 428531198641915234}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3945789658775011620
 MeshFilter:
@@ -148,10 +151,12 @@ MeshRenderer:
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
   m_MotionVectors: 1
   m_LightProbeUsage: 1
   m_ReflectionProbeUsage: 1
   m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -176,6 +181,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!64 &2955476184920399714
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -184,9 +190,17 @@ MeshCollider:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 731353285256975419}
   m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
   m_IsTrigger: 0
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 4
+  serializedVersion: 5
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 8826028978567540583, guid: 776bc60bb10c3aa4896ed3475f00340d, type: 3}
@@ -201,7 +215,7 @@ GameObject:
   - component: {fileID: 2205892328230955029}
   - component: {fileID: 1579177629425907385}
   m_Layer: 0
-  m_Name: Area Light
+  m_Name: Lamp Light
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -214,12 +228,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4541530951714045414}
+  serializedVersion: 2
   m_LocalRotation: {x: 0.52245456, y: 0.1102478, z: -0.082202286, w: 0.8415043}
   m_LocalPosition: {x: 0.115, y: 7.454, z: 0.448}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 102906990132383361}
-  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 63.821003, y: 13.055, z: -3.0080001}
 --- !u!108 &1579177629425907385
 Light:
@@ -230,19 +245,19 @@ Light:
   m_GameObject: {fileID: 4541530951714045414}
   m_Enabled: 1
   serializedVersion: 10
-  m_Type: 3
+  m_Type: 0
   m_Shape: 0
-  m_Color: {r: 0.990566, g: 0.89448273, b: 0.80833924, a: 1}
-  m_Intensity: 15
-  m_Range: 35
-  m_SpotAngle: 30
-  m_InnerSpotAngle: 21.80208
+  m_Color: {r: 1, g: 0.84210527, b: 0.627451, a: 1}
+  m_Intensity: 0.5
+  m_Range: 20
+  m_SpotAngle: 82
+  m_InnerSpotAngle: 58
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0
     m_Bias: 0.05
     m_NormalBias: 0.4
     m_NearPlane: 0.2
@@ -267,7 +282,7 @@ Light:
   m_Cookie: {fileID: 0}
   m_DrawHalo: 0
   m_Flare: {fileID: 0}
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -275,11 +290,12 @@ Light:
   m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 0.33991137, y: 0.23013787}
-  m_BounceIntensity: 1.2
+  m_BounceIntensity: 0.35
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
 --- !u!1 &7385033050321617964
@@ -293,7 +309,7 @@ GameObject:
   - component: {fileID: 8919997389292832815}
   - component: {fileID: 795094926720211510}
   m_Layer: 0
-  m_Name: Area Light (1)
+  m_Name: Lamp Light (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -306,12 +322,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7385033050321617964}
+  serializedVersion: 2
   m_LocalRotation: {x: 0.42202508, y: -0.52881235, z: 0.318764, w: 0.6638086}
   m_LocalPosition: {x: -0.457, y: 7.437, z: 0.122}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 102906990132383361}
-  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 63.821003, y: -78.957, z: -3.0080001}
 --- !u!108 &795094926720211510
 Light:
@@ -322,19 +339,19 @@ Light:
   m_GameObject: {fileID: 7385033050321617964}
   m_Enabled: 1
   serializedVersion: 10
-  m_Type: 3
+  m_Type: 0
   m_Shape: 0
-  m_Color: {r: 0.990566, g: 0.89448273, b: 0.80833924, a: 1}
-  m_Intensity: 15
-  m_Range: 35
-  m_SpotAngle: 30
-  m_InnerSpotAngle: 21.80208
+  m_Color: {r: 1, g: 0.84210527, b: 0.627451, a: 1}
+  m_Intensity: 0.5
+  m_Range: 20
+  m_SpotAngle: 82
+  m_InnerSpotAngle: 58
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0
     m_Bias: 0.05
     m_NormalBias: 0.4
     m_NearPlane: 0.2
@@ -359,7 +376,7 @@ Light:
   m_Cookie: {fileID: 0}
   m_DrawHalo: 0
   m_Flare: {fileID: 0}
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -367,11 +384,12 @@ Light:
   m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 0.33991137, y: 0.23013787}
-  m_BounceIntensity: 1.2
+  m_BounceIntensity: 0.35
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
 --- !u!1 &9196441531179491278
@@ -385,7 +403,7 @@ GameObject:
   - component: {fileID: 428531198641915234}
   - component: {fileID: 3743319114794646905}
   m_Layer: 0
-  m_Name: Area Light (3)
+  m_Name: Lamp Light (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -398,12 +416,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9196441531179491278}
+  serializedVersion: 2
   m_LocalRotation: {x: -0.3101177, y: -0.67442334, z: 0.42841855, w: -0.5152066}
   m_LocalPosition: {x: 0.469, y: 7.437, z: -0.118}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 102906990132383361}
-  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 63.821003, y: -256.627, z: -3.0070002}
 --- !u!108 &3743319114794646905
 Light:
@@ -414,19 +433,19 @@ Light:
   m_GameObject: {fileID: 9196441531179491278}
   m_Enabled: 1
   serializedVersion: 10
-  m_Type: 3
+  m_Type: 0
   m_Shape: 0
-  m_Color: {r: 0.990566, g: 0.89448273, b: 0.80833924, a: 1}
-  m_Intensity: 15
-  m_Range: 35
-  m_SpotAngle: 30
-  m_InnerSpotAngle: 21.80208
+  m_Color: {r: 1, g: 0.84210527, b: 0.627451, a: 1}
+  m_Intensity: 0.5
+  m_Range: 20
+  m_SpotAngle: 82
+  m_InnerSpotAngle: 58
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
-    m_Strength: 1
+    m_Strength: 0
     m_Bias: 0.05
     m_NormalBias: 0.4
     m_NearPlane: 0.2
@@ -451,7 +470,7 @@ Light:
   m_Cookie: {fileID: 0}
   m_DrawHalo: 0
   m_Flare: {fileID: 0}
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -459,10 +478,11 @@ Light:
   m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 0.33991137, y: 0.23013787}
-  m_BounceIntensity: 1.2
+  m_BounceIntensity: 0.35
   m_ColorTemperature: 6570
   m_UseColorTemperature: 0
   m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
   m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
