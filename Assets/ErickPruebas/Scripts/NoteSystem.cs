@@ -53,9 +53,10 @@ public class NoteSystem : MonoBehaviour
     void OpenNote(InteractableNote note)
     {
         isReading = true;
+        note.MarkAsCollected();
 
         notePanel.SetActive(true);
-        noteText.text = note.noteData.noteText;
+        noteText.text = BuildNoteContent(note);
 
         interactText.SetActive(false);
 
@@ -71,5 +72,20 @@ public class NoteSystem : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+    }
+
+    private string BuildNoteContent(InteractableNote note)
+    {
+        if (note == null || note.noteData == null)
+        {
+            return string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(note.noteData.title))
+        {
+            return note.noteData.noteText;
+        }
+
+        return $"<b>{note.noteData.title}</b>\n\n{note.noteData.noteText}";
     }
 }
