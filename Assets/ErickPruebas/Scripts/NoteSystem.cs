@@ -3,24 +3,19 @@ using TMPro;
 
 public class NoteSystem : MonoBehaviour
 {
+    [Header("UI")]
     public GameObject interactText;
     public GameObject notePanel;
-    public TMP_Text noteUIText;
+    public TMP_Text noteText;
 
     private InteractableNote currentNote;
     private bool isReading = false;
-
-    void Start()
-    {
-        interactText.SetActive(false);
-        notePanel.SetActive(false);
-    }
 
     void Update()
     {
         if (isReading)
         {
-            if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.E))
+            if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Escape))
             {
                 CloseNote();
             }
@@ -42,6 +37,7 @@ public class NoteSystem : MonoBehaviour
         if (currentNote != null)
         {
             interactText.SetActive(true);
+            interactText.GetComponent<TMP_Text>().text = "Presiona E para inspeccionar";
 
             if (Input.GetKeyDown(KeyCode.E))
             {
@@ -56,25 +52,24 @@ public class NoteSystem : MonoBehaviour
 
     void OpenNote(InteractableNote note)
     {
-        notePanel.SetActive(true);
-        noteUIText.text = note.noteData.noteText;
-        interactText.SetActive(false);
         isReading = true;
+
+        notePanel.SetActive(true);
+        noteText.text = note.noteData.noteText;
+
+        interactText.SetActive(false);
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-
-        Time.timeScale = 0f;
     }
 
     void CloseNote()
     {
-        notePanel.SetActive(false);
         isReading = false;
+
+        notePanel.SetActive(false);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-
-        Time.timeScale = 1f;
     }
 }
