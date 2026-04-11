@@ -30,6 +30,8 @@ public class NotesMenuUI : MonoBehaviour
     [SerializeField] private TMP_Text inventorySummaryText;
     [SerializeField] private bool autoFindInventoryCounter = true;
     [SerializeField] private string emptyInventoryMessage = "Sin documentos";
+    [SerializeField] private float notesFirstRowY = -170f;
+    [SerializeField] private float notesRowSpacing = 120f;
 
     [Header("Tarjetas de notas")]
     [SerializeField] private Color discoveredSlotColor = new Color(0.18f, 0.23f, 0.30f, 0.95f);
@@ -59,6 +61,7 @@ public class NotesMenuUI : MonoBehaviour
         ResolveHeaderElements();
         ResolveNoteSlots();
         BuildHeaderTab();
+        LayoutNoteSlots();
     }
 
     private void OnEnable()
@@ -126,6 +129,7 @@ public class NotesMenuUI : MonoBehaviour
         isOpen = true;
 
         notesMenu.SetActive(true);
+        ObjectiveSystem.EnsureInstance().SetHudVisible(false);
 
         if (freezeGameWhenOpen)
             Time.timeScale = 0f;
@@ -192,6 +196,7 @@ public class NotesMenuUI : MonoBehaviour
         panelContainer.anchoredPosition = hiddenAnchoredPosition;
 
         notesMenu.SetActive(false);
+        ObjectiveSystem.EnsureInstance().SetHudVisible(true);
 
         if (freezeGameWhenOpen)
             Time.timeScale = 1f;
@@ -223,6 +228,7 @@ public class NotesMenuUI : MonoBehaviour
         if (notesMenu != null)
             notesMenu.SetActive(false);
 
+        ObjectiveSystem.EnsureInstance().SetHudVisible(true);
         Time.timeScale = 1f;
     }
 
@@ -282,6 +288,7 @@ public class NotesMenuUI : MonoBehaviour
             {
                 inventorySummaryText = textComponents[i];
             }
+
         }
     }
 
@@ -337,7 +344,7 @@ public class NotesMenuUI : MonoBehaviour
             status = CreateSlotText("SlotStatus", slotRoot, 18f, 52f, 18f, 16f, 16, FontStyles.Normal);
         }
 
-        return new NoteSlotView(slotRoot, background, title, status);
+        return new NoteSlotView(slotRoot, background, title, status, slotRoot.anchoredPosition, slotRoot.sizeDelta);
     }
 
     private TMP_Text FindText(RectTransform root, string objectName)
@@ -456,6 +463,8 @@ public class NotesMenuUI : MonoBehaviour
             inventorySummaryText.fontSize = 18;
             inventorySummaryText.color = new Color(0.72f, 0.71f, 0.67f, 1f);
         }
+
+        LayoutNoteSlots();
     }
 
     private RectTransform FindNamedRectTransform(string objectName)
@@ -477,6 +486,7 @@ public class NotesMenuUI : MonoBehaviour
         if (noteSlots.Count == 0)
         {
             ResolveNoteSlots();
+            LayoutNoteSlots();
         }
 
         for (int i = 0; i < noteSlots.Count; i++)
@@ -502,7 +512,9 @@ public class NotesMenuUI : MonoBehaviour
         slot.Title.color = note.Collected ? discoveredTextColor : pendingTextColor;
         slot.Status.color = note.Collected ? discoveredAccentColor : pendingAccentColor;
         slot.Title.text = note.DisplayName;
-        slot.Status.text = note.Collected ? $"Archivado\n{note.PreviewText}" : "Pendiente por inspeccionar";
+        slot.Status.text = note.Collected ? note.FullText : "Pendiente por inspeccionar";
+        slot.Status.enableWordWrapping = true;
+        slot.Status.overflowMode = TextOverflowModes.Ellipsis;
     }
 
     private void ApplyEmptyState(NoteSlotView slot, int index)
@@ -518,19 +530,41 @@ public class NotesMenuUI : MonoBehaviour
         slot.Status.text = "Sin registro";
     }
 
+    private void LayoutNoteSlots()
+    {
+        if (noteSlots.Count == 0)
+        {
+            return;
+        }
+
+        for (int i = 0; i < noteSlots.Count; i++)
+        {
+            NoteSlotView slot = noteSlots[i];
+            int row = i / 2;
+            Vector2 anchoredPosition = slot.OriginalAnchoredPosition;
+            anchoredPosition.y = notesFirstRowY - (row * notesRowSpacing);
+            slot.Root.anchoredPosition = anchoredPosition;
+            slot.Root.sizeDelta = slot.OriginalSizeDelta;
+        }
+    }
+
     private struct NoteSlotView
     {
         public readonly RectTransform Root;
         public readonly Image Background;
         public readonly TMP_Text Title;
         public readonly TMP_Text Status;
+        public readonly Vector2 OriginalAnchoredPosition;
+        public readonly Vector2 OriginalSizeDelta;
 
-        public NoteSlotView(RectTransform root, Image background, TMP_Text title, TMP_Text status)
+        public NoteSlotView(RectTransform root, Image background, TMP_Text title, TMP_Text status, Vector2 originalAnchoredPosition, Vector2 originalSizeDelta)
         {
             Root = root;
             Background = background;
             Title = title;
             Status = status;
+            OriginalAnchoredPosition = originalAnchoredPosition;
+            OriginalSizeDelta = originalSizeDelta;
         }
     }
 }

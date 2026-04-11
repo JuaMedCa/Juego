@@ -8,6 +8,7 @@ public class PickupItem : MonoBehaviour
     [Min(1)] public int amount = 1;
     [Min(0)] public int points = 1;
     public string pickupPrompt = "Presiona E para recoger";
+    [SerializeField] private bool isFuelPickup;
     public FuelSequenceManager fuelManager;
 
     [HideInInspector]
@@ -20,7 +21,7 @@ public class PickupItem : MonoBehaviour
     public string PickupPrompt => string.IsNullOrWhiteSpace(pickupPrompt)
         ? $"Presiona E para recoger {DisplayName}"
         : pickupPrompt;
-    public bool IsFuelPickup => DisplayName.StartsWith("Fuel Tank");
+    public bool IsFuelPickup => isFuelPickup || ItemId.ToLowerInvariant().Contains("fuel") || DisplayName.ToLowerInvariant().Contains("gasolina");
 
     private void OnTriggerEnter(Collider other)
     {

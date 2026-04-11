@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class ObjectiveSystem : MonoBehaviour
 {
     private static ObjectiveSystem instance;
+    public event System.Action ObjectivesChanged;
 
     public static bool HasInstance => instance != null;
 
@@ -55,9 +56,11 @@ public class ObjectiveSystem : MonoBehaviour
     private readonly HashSet<string> collectedFuelIds = new HashSet<string>();
     private readonly HashSet<string> readNoteIds = new HashSet<string>();
 
+    private bool mapCollected;
     private bool houseObjectiveUnlocked;
     private bool returnObjectiveUnlocked;
 
+    private GameObject hudRoot;
     private Canvas hudCanvas;
     private TMP_Text objectiveText;
     private Image objectivePanel;
@@ -94,6 +97,8 @@ public class ObjectiveSystem : MonoBehaviour
 
     public void RegisterMapPickup()
     {
+        mapCollected = true;
+
         if (unlockHouseObjectiveOnMapPickup)
         {
             houseObjectiveUnlocked = true;
@@ -120,6 +125,19 @@ public class ObjectiveSystem : MonoBehaviour
 
     public int FuelCollectedCount => collectedFuelIds.Count;
     public int NotesReadCount => readNoteIds.Count;
+    public bool HasCollectedMap => mapCollected;
+    public bool IsHouseObjectiveUnlocked => houseObjectiveUnlocked;
+    public bool IsReturnObjectiveUnlocked => returnObjectiveUnlocked;
+
+    public void SetHudVisible(bool visible)
+    {
+        EnsureHud();
+
+        if (hudRoot != null)
+        {
+            hudRoot.SetActive(visible);
+        }
+    }
 
     private void EnsureHud()
     {
@@ -128,16 +146,21 @@ public class ObjectiveSystem : MonoBehaviour
             return;
         }
 
-        Canvas existingCanvas = FindObjectOfType<Canvas>();
-        if (existingCanvas != null)
+        GameObject existingHud = GameObject.Find("ObjectiveCanvas");
+        if (existingHud != null)
         {
-            hudCanvas = existingCanvas;
+            hudRoot = existingHud;
+            hudCanvas = existingHud.GetComponent<Canvas>();
         }
         else
         {
             GameObject canvasObject = new GameObject("ObjectiveCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            hudRoot = canvasObject;
             hudCanvas = canvasObject.GetComponent<Canvas>();
             hudCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            hudCanvas.sortingOrder = 25;
+
+            DontDestroyOnLoad(canvasObject);
 
             CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -178,6 +201,8 @@ public class ObjectiveSystem : MonoBehaviour
         objectiveText.color = new Color(0.94f, 0.92f, 0.86f, 1f);
         objectiveText.alignment = TextAlignmentOptions.TopLeft;
         objectiveText.enableWordWrapping = true;
+
+        SetHudVisible(true);
     }
 
     private RectTransform FindOrCreateChildRect(string objectName, Transform parent)
@@ -204,10 +229,24 @@ public class ObjectiveSystem : MonoBehaviour
             return;
         }
 
+        List<string> hudLines = new List<string>();
+        hudLines.Add($"<b>{objectiveHeader}</b>");
+        hudLines.Add(string.Empty);
+        hudLines.AddRange(GetActiveObjectiveLines());
+
+        objectiveText.text = string.Join("\n", hudLines);
+        ObjectivesChanged?.Invoke();
+    }
+
+    public List<string> GetActiveObjectiveLines()
+    {
         List<string> lines = new List<string>();
-        lines.Add($"<b>{objectiveHeader}</b>");
-        lines.Add(string.Empty);
         lines.Add($"{fuelObjectiveLabel} ({FuelCollectedCount}/{totalFuelRequired})");
+
+        if (!mapCollected)
+        {
+            lines.Add("Recoge el mapa");
+        }
 
         if (houseObjectiveUnlocked)
         {
@@ -219,12 +258,28 @@ public class ObjectiveSystem : MonoBehaviour
             lines.Add(returnObjectiveLabel);
         }
 
-        if (NotesReadCount > 0)
+        if (TotalNotesTargetVisible())
         {
             lines.Add($"{notesObjectiveLabel} ({NotesReadCount}/{totalNotesTarget})");
         }
 
-        objectiveText.text = string.Join("\n", lines);
+        return lines;
+    }
+
+    public string GetObjectiveSummary(string emptyMessage = "Sin objetivos activos")
+    {
+        List<string> lines = GetActiveObjectiveLines();
+        if (lines.Count == 0)
+        {
+            return emptyMessage;
+        }
+
+        return string.Join("\n", lines);
+    }
+
+    private bool TotalNotesTargetVisible()
+    {
+        return NotesReadCount > 0 || totalNotesTarget > 0;
     }
 
     private static string NormalizeId(string rawId)

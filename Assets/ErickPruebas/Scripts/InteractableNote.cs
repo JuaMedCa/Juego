@@ -17,6 +17,7 @@ public class InteractableNote : MonoBehaviour
     public string NoteId => ResolveNoteId();
     public string DisplayName => ResolveDisplayName();
     public string PreviewText => ResolvePreviewText();
+    public string FullText => ResolveFullText();
 
     private void Awake()
     {
@@ -28,12 +29,12 @@ public class InteractableNote : MonoBehaviour
 
     public void RegisterInInventory()
     {
-        InventoryManager.EnsureInstance().RegisterNote(NoteId, DisplayName, PreviewText);
+        InventoryManager.EnsureInstance().RegisterNote(NoteId, DisplayName, PreviewText, FullText);
     }
 
     public bool MarkAsCollected()
     {
-        return InventoryManager.EnsureInstance().DiscoverNote(NoteId, DisplayName, PreviewText);
+        return InventoryManager.EnsureInstance().DiscoverNote(NoteId, DisplayName, PreviewText, FullText);
     }
 
     void OnTriggerEnter(Collider other)
@@ -104,6 +105,16 @@ public class InteractableNote : MonoBehaviour
         }
 
         return cleanText.Substring(0, 48).TrimEnd() + "...";
+    }
+
+    private string ResolveFullText()
+    {
+        if (noteData == null || string.IsNullOrWhiteSpace(noteData.noteText))
+        {
+            return "Sin contenido";
+        }
+
+        return noteData.noteText.Trim();
     }
 
     private Transform FindBookChild(Transform root)

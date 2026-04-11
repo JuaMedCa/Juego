@@ -145,7 +145,7 @@ public class InventoryManager : MonoBehaviour
         return builder.ToString();
     }
 
-    public void RegisterNote(string noteId, string displayName, string previewText = "")
+    public void RegisterNote(string noteId, string displayName, string previewText = "", string fullText = "")
     {
         if (string.IsNullOrWhiteSpace(noteId))
         {
@@ -155,7 +155,7 @@ public class InventoryManager : MonoBehaviour
         bool changed = false;
         if (!notes.TryGetValue(noteId, out NoteEntry entry))
         {
-            entry = new NoteEntry(noteId, displayName, previewText);
+            entry = new NoteEntry(noteId, displayName, previewText, fullText);
             notes.Add(noteId, entry);
             noteOrder.Add(noteId);
             changed = true;
@@ -163,6 +163,7 @@ public class InventoryManager : MonoBehaviour
 
         string resolvedName = string.IsNullOrWhiteSpace(displayName) ? entry.DisplayName : displayName.Trim();
         string resolvedPreview = string.IsNullOrWhiteSpace(previewText) ? entry.PreviewText : previewText.Trim();
+        string resolvedFullText = string.IsNullOrWhiteSpace(fullText) ? entry.FullText : fullText.Trim();
 
         if (entry.DisplayName != resolvedName)
         {
@@ -176,20 +177,26 @@ public class InventoryManager : MonoBehaviour
             changed = true;
         }
 
+        if (entry.FullText != resolvedFullText)
+        {
+            entry.FullText = resolvedFullText;
+            changed = true;
+        }
+
         if (changed)
         {
             InventoryChanged?.Invoke();
         }
     }
 
-    public bool DiscoverNote(string noteId, string displayName, string previewText = "")
+    public bool DiscoverNote(string noteId, string displayName, string previewText = "", string fullText = "")
     {
         if (string.IsNullOrWhiteSpace(noteId))
         {
             return false;
         }
 
-        RegisterNote(noteId, displayName, previewText);
+        RegisterNote(noteId, displayName, previewText, fullText);
 
         NoteEntry entry = notes[noteId];
         if (entry.Collected)
@@ -241,6 +248,7 @@ public class InventoryManager : MonoBehaviour
                 entry.NoteId,
                 entry.DisplayName,
                 entry.PreviewText,
+                entry.FullText,
                 entry.Collected,
                 i + 1));
         }
@@ -270,13 +278,15 @@ public class InventoryManager : MonoBehaviour
         public string NoteId;
         public string DisplayName;
         public string PreviewText;
+        public string FullText;
         public bool Collected;
 
-        public NoteEntry(string noteId, string displayName, string previewText)
+        public NoteEntry(string noteId, string displayName, string previewText, string fullText)
         {
             NoteId = noteId;
             DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Documento" : displayName.Trim();
             PreviewText = string.IsNullOrWhiteSpace(previewText) ? "Pendiente por inspeccionar" : previewText.Trim();
+            FullText = string.IsNullOrWhiteSpace(fullText) ? PreviewText : fullText.Trim();
             Collected = false;
         }
     }
@@ -286,14 +296,16 @@ public class InventoryManager : MonoBehaviour
         public readonly string NoteId;
         public readonly string DisplayName;
         public readonly string PreviewText;
+        public readonly string FullText;
         public readonly bool Collected;
         public readonly int Order;
 
-        public NoteSnapshot(string noteId, string displayName, string previewText, bool collected, int order)
+        public NoteSnapshot(string noteId, string displayName, string previewText, string fullText, bool collected, int order)
         {
             NoteId = noteId;
             DisplayName = displayName;
             PreviewText = previewText;
+            FullText = fullText;
             Collected = collected;
             Order = order;
         }
