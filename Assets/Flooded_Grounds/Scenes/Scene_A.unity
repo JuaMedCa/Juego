@@ -8531,6 +8531,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4201decd4281644ab9c9d00e961ca4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  noteId: 
+  displayName: 
+  autoRegisterOnAwake: 1
+  bookChildName: Book04
   noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
   playerInside: 0
 --- !u!65 &61372089
@@ -15765,7 +15769,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 283e292a04684f6409fdc9050422e504, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Tanque de gas
+  itemId: 
+  displayName: 
+  amount: 1
+  points: 1
+  pickupPrompt: Presiona E para recoger
   fuelManager: {fileID: 454282254}
   playerInside: 0
 --- !u!65 &114228593
@@ -53562,7 +53570,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: [{targetCorrespondingSourceObject: {fileID: 172958, guid: 5601521e5fc5f7743993db1ebd891042, type: 3}, insertIndex: -1, addedObject: {fileID: 397188604}}]
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 172958, guid: 5601521e5fc5f7743993db1ebd891042, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 397188604}
   m_SourcePrefab: {fileID: 100100000, guid: 5601521e5fc5f7743993db1ebd891042, type: 3}
 --- !u!1 &397188603 stripped
 GameObject:
@@ -56780,7 +56791,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: [{targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 776bc60bb10c3aa4896ed3475f00340d, type: 3}, insertIndex: -1, addedObject: {fileID: 417668132}}]
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 776bc60bb10c3aa4896ed3475f00340d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 417668132}
   m_SourcePrefab: {fileID: 100100000, guid: 776bc60bb10c3aa4896ed3475f00340d, type: 3}
 --- !u!1 &417668131 stripped
 GameObject:
@@ -67490,7 +67504,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: [{fileID: 54910704279798572, guid: a25ba8cacea6a1440a5f8c38ba04c26d, type: 3}]
+    m_RemovedComponents:
+    - {fileID: 54910704279798572, guid: a25ba8cacea6a1440a5f8c38ba04c26d, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -72104,6 +72119,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4201decd4281644ab9c9d00e961ca4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  noteId: 
+  displayName: 
+  autoRegisterOnAwake: 1
+  bookChildName: Book04
   noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
   playerInside: 0
 --- !u!65 &540103086
@@ -80135,7 +80154,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 283e292a04684f6409fdc9050422e504, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Tanque de gas
+  itemId: 
+  displayName: 
+  amount: 1
+  points: 1
+  pickupPrompt: Presiona E para recoger
   fuelManager: {fileID: 454282254}
   playerInside: 0
 --- !u!65 &598046801
@@ -80615,7 +80638,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 17.970009
+      value: 18.981
       objectReference: {fileID: 0}
     - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
       propertyPath: m_LocalPosition.z
@@ -113222,6 +113245,59 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cd395b40de0957d4d9c85b8e623a07d1, type: 3}
+--- !u!1001 &840574362
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 116360, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_Name
+      value: Prop_Chair_A (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_RootOrder
+      value: 1086
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 557.5689
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 18.981
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 275.52512
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.03646525
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.99933493
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -184.18
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
 --- !u!1001 &841048060
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -115350,7 +115426,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 283e292a04684f6409fdc9050422e504, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Tanque de gas
+  itemId: 
+  displayName: 
+  amount: 1
+  points: 1
+  pickupPrompt: Presiona E para recoger
   fuelManager: {fileID: 454282254}
   playerInside: 0
 --- !u!65 &854077096
@@ -118770,6 +118850,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4201decd4281644ab9c9d00e961ca4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  noteId: 
+  displayName: 
+  autoRegisterOnAwake: 1
+  bookChildName: Book04
   noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
   playerInside: 0
 --- !u!65 &876980366
@@ -136099,7 +136183,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: [{targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 776bc60bb10c3aa4896ed3475f00340d, type: 3}, insertIndex: -1, addedObject: {fileID: 1009763835}}]
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 776bc60bb10c3aa4896ed3475f00340d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1009763835}
   m_SourcePrefab: {fileID: 100100000, guid: 776bc60bb10c3aa4896ed3475f00340d, type: 3}
 --- !u!1 &1009763834 stripped
 GameObject:
@@ -137033,63 +137120,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 420674, guid: 53ac28d4b9ad6684181c2de777dc2f4f, type: 3}
   m_PrefabInstance: {fileID: 1013810222}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &1015469027
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 111996, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_Name
-      value: Villa2_Base_Mid_B (9)
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_RootOrder
-      value: 4629
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalScale.z
-      value: -1
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 487.79
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 16.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 515.508
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.70100397
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0.7131574
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 90.985
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
 --- !u!1001 &1014174374
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -137177,6 +137207,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7083710383624773178, guid: 0644a2c2029b4614ca3bf9c41f825815, type: 3}
   m_PrefabInstance: {fileID: 1014174374}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1015469027
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 111996, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_Name
+      value: Villa2_Base_Mid_B (9)
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_RootOrder
+      value: 4629
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalScale.z
+      value: -1
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 487.79
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 16.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 515.508
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.70100397
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.7131574
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 450512, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 90.985
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 996c6dd75e116554ea1985a8c9e8c8d2, type: 3}
 --- !u!1001 &1015609537
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -149790,6 +149877,18 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: 0.99947333
       objectReference: {fileID: 0}
+    - target: {fileID: 433570, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 433570, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.068
+      objectReference: {fileID: 0}
+    - target: {fileID: 433570, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -162234,7 +162333,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: [{fileID: 54910704279798572, guid: a25ba8cacea6a1440a5f8c38ba04c26d, type: 3}]
+    m_RemovedComponents:
+    - {fileID: 54910704279798572, guid: a25ba8cacea6a1440a5f8c38ba04c26d, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -167425,7 +167525,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 17.970009
+      value: 18.932
       objectReference: {fileID: 0}
     - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
       propertyPath: m_LocalPosition.z
@@ -188763,7 +188863,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: [{fileID: 54604288973760288, guid: 75744bcd55d6378499c5cc2317d62458, type: 3}]
+    m_RemovedComponents:
+    - {fileID: 54604288973760288, guid: 75744bcd55d6378499c5cc2317d62458, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -191492,6 +191593,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4201decd4281644ab9c9d00e961ca4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  noteId: 
+  displayName: 
+  autoRegisterOnAwake: 1
+  bookChildName: Book04
   noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
   playerInside: 0
 --- !u!65 &1414108756
@@ -206623,7 +206728,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 428554, guid: d5d4dde01c76a7e4397910ce96898cb1, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 17.970007
+      value: 18.917
       objectReference: {fileID: 0}
     - target: {fileID: 428554, guid: d5d4dde01c76a7e4397910ce96898cb1, type: 3}
       propertyPath: m_LocalPosition.z
@@ -210103,7 +210208,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: [{targetCorrespondingSourceObject: {fileID: 4253837057095392, guid: 794fd21334395d549bf308abb4dec461, type: 3}, insertIndex: -1, addedObject: {fileID: 710910167}}]
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4253837057095392, guid: 794fd21334395d549bf308abb4dec461, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 710910167}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 794fd21334395d549bf308abb4dec461, type: 3}
 --- !u!1001 &1546937582
@@ -215985,6 +216093,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   interactText: {fileID: 513823394}
+  interactLabel: {fileID: 0}
+  pickupKey: 101
+  useMessageSystem: 1
+  pickupMessageDuration: 1.5
 --- !u!4 &1593208586
 Transform:
   m_ObjectHideFlags: 0
@@ -221119,7 +221231,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 19.272
+      value: 20.301
       objectReference: {fileID: 0}
     - target: {fileID: 406252, guid: ab34233292d193c47948f094a12fc6c7, type: 3}
       propertyPath: m_LocalPosition.z
@@ -240399,7 +240511,8 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: [{fileID: 54666432431038962, guid: eb028c0b99da8ba4ea38168869d4c693, type: 3}]
+    m_RemovedComponents:
+    - {fileID: 54666432431038962, guid: eb028c0b99da8ba4ea38168869d4c693, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -245726,6 +245839,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4201decd4281644ab9c9d00e961ca4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  noteId: 
+  displayName: 
+  autoRegisterOnAwake: 1
+  bookChildName: Book04
   noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
   playerInside: 0
 --- !u!65 &1810429627
@@ -245808,7 +245925,7 @@ Transform:
   m_GameObject: {fileID: 1810429624}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 557.844, y: 18.685, z: 275.561}
+  m_LocalPosition: {x: 557.844, y: 19.686, z: 275.561}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -260553,7 +260670,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 283e292a04684f6409fdc9050422e504, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Tanque de gas
+  itemId: 
+  displayName: 
+  amount: 1
+  points: 1
+  pickupPrompt: Presiona E para recoger
   fuelManager: {fileID: 454282254}
   playerInside: 0
 --- !u!65 &1927355248
@@ -264900,7 +265021,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 283e292a04684f6409fdc9050422e504, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Tanque de gas
+  itemId: 
+  displayName: 
+  amount: 1
+  points: 1
+  pickupPrompt: Presiona E para recoger
   fuelManager: {fileID: 454282254}
   playerInside: 0
 --- !u!65 &1955146751
@@ -265134,6 +265259,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4201decd4281644ab9c9d00e961ca4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  noteId: 
+  displayName: 
+  autoRegisterOnAwake: 1
+  bookChildName: Book04
   noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
   playerInside: 0
 --- !u!65 &1956150635
@@ -266795,11 +266924,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1987814901560157203, guid: 3028bdafdc13c1c4a911990395bbbce8, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 17.97001
+      value: 18.92
       objectReference: {fileID: 0}
     - target: {fileID: 1987814901560157203, guid: 3028bdafdc13c1c4a911990395bbbce8, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 276.194
+      value: 276.6
       objectReference: {fileID: 0}
     - target: {fileID: 1987814901560157203, guid: 3028bdafdc13c1c4a911990395bbbce8, type: 3}
       propertyPath: m_LocalRotation.w
@@ -266876,7 +267005,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 283e292a04684f6409fdc9050422e504, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Tanque de gas
+  itemId: 
+  displayName: 
+  amount: 1
+  points: 1
+  pickupPrompt: Presiona E para recoger
   fuelManager: {fileID: 454282254}
   playerInside: 0
 --- !u!65 &1964133326
@@ -270421,7 +270554,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 283e292a04684f6409fdc9050422e504, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  itemName: Tanque de gas
+  itemId: 
+  displayName: 
+  amount: 1
+  points: 1
+  pickupPrompt: Presiona E para recoger
   fuelManager: {fileID: 454282254}
   playerInside: 0
 --- !u!65 &1997026583
@@ -288366,6 +288503,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4201decd4281644ab9c9d00e961ca4d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  noteId: 
+  displayName: 
+  autoRegisterOnAwake: 1
+  bookChildName: Book04
   noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
   playerInside: 0
 --- !u!65 &2120169853
@@ -293558,6 +293699,7 @@ SceneRoots:
   - {fileID: 1219664316}
   - {fileID: 18482104}
   - {fileID: 600465854}
+  - {fileID: 840574362}
   - {fileID: 502730959}
   - {fileID: 1954301466}
   - {fileID: 374967636}
@@ -297604,3 +297746,8 @@ SceneRoots:
   - {fileID: 1872092804}
   - {fileID: 86060941}
   - {fileID: 961452539}
+  - {fileID: 1009763833}
+  - {fileID: 417668130}
+  - {fileID: 403086183}
+  - {fileID: 168491215}
+  - {fileID: 654716006}
