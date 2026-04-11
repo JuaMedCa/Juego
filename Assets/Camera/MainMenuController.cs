@@ -1,5 +1,5 @@
 using System.Collections;
-using System.Collections.Generic;
+using Cinemachine;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -11,243 +11,208 @@ using UnityEditor;
 [DisallowMultipleComponent]
 public class MainMenuController : MonoBehaviour
 {
-    [Header("Branding")]
-    [SerializeField] private string gameTitle = "DARK FALL";
-    [SerializeField] private string gameSubtitle = "NO DEBERÍAS ESTAR AQUÍ";
-    [SerializeField] private Sprite logoSprite;
+    const string VolumeKey = "menu.volume";
+    const string SensitivityKey = "menu.sensitivity";
+    const string QualityKey = "menu.quality";
+    const string FullscreenKey = "menu.fullscreen";
+    const string VSyncKey = "menu.vsync";
 
-    [Header("Background")]
-    [SerializeField] private Sprite backgroundSprite;
-    [SerializeField] private Color backgroundTint = new Color(1f, 1f, 1f, 0.16f);
-    [SerializeField] private Color fallbackBackgroundColor = new Color(0.01f, 0.01f, 0.01f, 1f);
-    [SerializeField] private Color fogColorA = new Color(0.02f, 0.02f, 0.02f, 0.50f);
-    [SerializeField] private Color fogColorB = new Color(0.09f, 0.00f, 0.00f, 0.08f);
-    [SerializeField] private Color vignetteColor = new Color(0f, 0f, 0f, 0.82f);
+    [Header("Branding")]
+    [SerializeField] string gameTitle = "DARK FALL";
+    [SerializeField] string gameSubtitle = "NO DEBERIAS ESTAR AQUI";
+    [SerializeField] Sprite logoSprite;
 
     [Header("Theme")]
-    [SerializeField] private Color panelColor = new Color(0f, 0f, 0f, 0.55f);
-    [SerializeField] private Color buttonNormalColor = new Color(1f, 1f, 1f, 0.03f);
-    [SerializeField] private Color buttonHoverColor = new Color(0.35f, 0.03f, 0.03f, 0.16f);
-    [SerializeField] private Color accentColor = new Color(0.55f, 0.02f, 0.02f, 0.90f);
-    [SerializeField] private Color titleColor = new Color(0.86f, 0.86f, 0.84f, 1f);
-    [SerializeField] private Color textColor = new Color(0.60f, 0.60f, 0.60f, 1f);
-    [SerializeField] private Color faintTextColor = new Color(0.38f, 0.38f, 0.38f, 0.95f);
-    [SerializeField] private Color lineColor = new Color(0.25f, 0.02f, 0.02f, 0.35f);
+    [SerializeField] Sprite backgroundSprite;
+    [SerializeField] bool useSceneBackgroundCamera = true;
+    [SerializeField] Color panelColor = new Color(0.03f, 0.04f, 0.05f, 0.80f);
+    [SerializeField] Color accentColor = new Color(0.76f, 0.18f, 0.18f, 0.92f);
+    [SerializeField] Color accentSoftColor = new Color(0.76f, 0.18f, 0.18f, 0.18f);
+    [SerializeField] Color buttonColor = new Color(1f, 1f, 1f, 0.05f);
+    [SerializeField] Color buttonHoverColor = new Color(0.76f, 0.18f, 0.18f, 0.20f);
+    [SerializeField] Color titleColor = new Color(0.94f, 0.94f, 0.92f, 1f);
+    [SerializeField] Color textColor = new Color(0.78f, 0.78f, 0.76f, 1f);
+    [SerializeField] Color faintTextColor = new Color(0.50f, 0.50f, 0.50f, 1f);
+    [SerializeField] Color lineColor = new Color(1f, 1f, 1f, 0.08f);
 
     [Header("Defaults")]
-    [SerializeField] private float defaultMasterVolume = 0.8f;
-    [SerializeField] private float defaultCameraSensitivity = 6f;
+    [SerializeField] float defaultMasterVolume = 0.8f;
+    [SerializeField] float defaultCameraSensitivity = 6f;
+    [SerializeField] int defaultQualityLevel = 2;
+    [SerializeField] bool defaultFullscreen = true;
+    [SerializeField] bool defaultVSync = false;
 
-    [Header("Animation")]
-    [SerializeField] private float introFadeDuration = 2.8f;
-    [SerializeField] private float backgroundDriftAmount = 8f;
-    [SerializeField] private float backgroundDriftSpeed = 0.08f;
-    [SerializeField] private float titleBreathAmount = 4f;
-    [SerializeField] private float titleBreathSpeed = 0.7f;
-    [SerializeField] private float glitchChancePerSecond = 0.20f;
-    [SerializeField] private float glitchDuration = 0.06f;
-    [SerializeField] private float glitchIntensity = 10f;
-    [SerializeField] private float flickerChancePerSecond = 0.07f;
+    CanvasGroup canvasGroup;
+    GameObject menuRoot;
+    GameObject optionsPanel;
+    GameObject extrasPanel;
+    RectTransform backgroundRect;
+    RectTransform titleRect;
+    Vector2 titleBasePos;
+    Text whisperText;
+    Text sceneLabelText;
+    Text playButtonText;
+    Text volumeValueText;
+    Text sensitivityValueText;
+    Text qualityValueText;
+    Text fullscreenValueText;
+    Text vSyncValueText;
+    Text aerialModeButtonText;
+    Text firstPersonModeButtonText;
+    Image aerialModeButtonImage;
+    Image firstPersonModeButtonImage;
+    Camera gameplayCamera;
+    AudioListener gameplayAudioListener;
+    CinemachineBrain gameplayCinemachineBrain;
+    Camera menuBackgroundCamera;
+    Transform menuCameraRigRoot;
+    Transform menuCameraTarget;
+    GameObject notesHudRoot;
+    GameObject interactHudRoot;
+    GameObject messageHudRoot;
+    GameObject fpsHudRoot;
+    Font uiFont;
+    Sprite whiteSprite;
+    PlayerMovemnt playerMovement;
+    IsoCameraOrbit isoCameraOrbit;
+    float masterVolume;
+    float cameraSensitivity;
+    int qualityLevel;
+    bool fullscreenEnabled;
+    bool vSyncEnabled;
+    bool hasStartedGame;
 
-    private Canvas canvas;
-    private CanvasGroup canvasGroup;
-    private GameObject menuRoot;
-    private GameObject optionsPanel;
-    private GameObject extrasPanel;
-
-    private Text titleText;
-    private Text subtitleText;
-    private Text whisperText;
-    private Text volumeValueText;
-    private Text sensitivityValueText;
-    private Text sceneLabelText;
-    private Text aerialModeButtonText;
-    private Text firstPersonModeButtonText;
-    private Image aerialModeButtonImage;
-    private Image firstPersonModeButtonImage;
-
-    private PlayerMovemnt playerMovement;
-    private IsoCameraOrbit isoCameraOrbit;
-
-    private Font uiFont;
-    private Sprite whiteSprite;
-    private float masterVolume;
-
-    private RectTransform backgroundRect;
-    private Image fogA;
-    private Image fogB;
-    private Image flashImage;
-    private RectTransform titleRect;
-    private Vector2 titleBasePos;
-    private RectTransform menuPanelRect;
-    private Vector2 menuPanelBasePos;
-
-    private readonly List<RectTransform> glitchTargets = new List<RectTransform>();
-    private readonly Dictionary<RectTransform, Vector2> originalPositions = new Dictionary<RectTransform, Vector2>();
-
-    private readonly string[] whisperLines =
-    {
-        "NO ESTÁS SOLO",
-        "ALGO TE ESTÁ OBSERVANDO",
-        "NO MIRES DETRÁS DE TI",
-        "YA ES DEMASIADO TARDE",
-        "ELLOS ESCUCHAN TODO",
-        "NO DEBISTE ENTRAR",
-        "SIGUE RESPIRANDO",
-        "AÚN NO TE HA VISTO"
-    };
-
-    private Coroutine introRoutine;
-    private Coroutine ambienceRoutine;
-    private Coroutine glitchRoutine;
-    private Coroutine flickerRoutine;
-    private Coroutine whisperRoutine;
-    private bool hasStartedGame;
-
-    private void Awake()
+    void Awake()
     {
         uiFont = LoadUiFont();
         whiteSprite = CreateWhiteSprite();
-
-        FindGameplayReferences();
+        playerMovement = FindObjectOfType<PlayerMovemnt>();
+        isoCameraOrbit = FindObjectOfType<IsoCameraOrbit>();
+        gameplayCamera = GetComponent<Camera>();
+        gameplayAudioListener = GetComponent<AudioListener>();
+        gameplayCinemachineBrain = GetComponent<CinemachineBrain>();
+        CacheGameplayHudRoots();
+        EnsureMenuCameraRig();
         BuildMenu();
-        InitializeValues();
+        LoadSettings();
+        ApplyAllSettings();
         OpenMenu();
-
-        introRoutine = StartCoroutine(PlayIntroFade());
-        ambienceRoutine = StartCoroutine(AmbienceLoop());
-        glitchRoutine = StartCoroutine(GlitchLoop());
-        flickerRoutine = StartCoroutine(FlickerLoop());
-        whisperRoutine = StartCoroutine(WhisperLoop());
+        StartCoroutine(FadeIn());
+        StartCoroutine(WhisperLoop());
     }
 
-    private void Update()
+    void Update()
     {
-        HandleEscapeMenu();
-        AnimateBackground();
-        AnimateFog();
-        AnimateTitle();
+        if (backgroundRect != null)
+        {
+            backgroundRect.localPosition = new Vector3(Mathf.Sin(Time.unscaledTime * 0.08f) * 10f, Mathf.Cos(Time.unscaledTime * 0.05f) * 6f, 0f);
+        }
+        if (titleRect != null)
+        {
+            titleRect.anchoredPosition = titleBasePos + new Vector2(0f, Mathf.Sin(Time.unscaledTime * 0.75f) * 4f);
+        }
+
+        if (!hasStartedGame || !Input.GetKeyDown(KeyCode.Escape)) return;
+
+        if (menuRoot.activeSelf) CloseMenu();
+        else OpenMenu();
     }
 
-    private void OnDestroy()
+    void OnDestroy()
     {
         Time.timeScale = 1f;
     }
 
-    private void FindGameplayReferences()
+    void LoadSettings()
     {
-        playerMovement = FindObjectOfType<PlayerMovemnt>();
-        isoCameraOrbit = FindObjectOfType<IsoCameraOrbit>();
+        masterVolume = PlayerPrefs.GetFloat(VolumeKey, defaultMasterVolume);
+        cameraSensitivity = PlayerPrefs.GetFloat(SensitivityKey, defaultCameraSensitivity);
+        qualityLevel = PlayerPrefs.GetInt(QualityKey, Mathf.Clamp(defaultQualityLevel, 0, QualitySettings.names.Length - 1));
+        fullscreenEnabled = PlayerPrefs.GetInt(FullscreenKey, defaultFullscreen ? 1 : 0) == 1;
+        vSyncEnabled = PlayerPrefs.GetInt(VSyncKey, defaultVSync ? 1 : 0) == 1;
     }
 
-    private void InitializeValues()
+    void SaveSettings()
     {
-        masterVolume = Mathf.Clamp01(AudioListener.volume);
-        if (Mathf.Approximately(masterVolume, 0f))
-        {
-            masterVolume = defaultMasterVolume;
-            AudioListener.volume = masterVolume;
-        }
+        PlayerPrefs.SetFloat(VolumeKey, masterVolume);
+        PlayerPrefs.SetFloat(SensitivityKey, cameraSensitivity);
+        PlayerPrefs.SetInt(QualityKey, qualityLevel);
+        PlayerPrefs.SetInt(FullscreenKey, fullscreenEnabled ? 1 : 0);
+        PlayerPrefs.SetInt(VSyncKey, vSyncEnabled ? 1 : 0);
+        PlayerPrefs.Save();
+    }
 
-        if (isoCameraOrbit != null)
-        {
-            isoCameraOrbit.MouseSensitivity = defaultCameraSensitivity;
-        }
-
+    void ApplyAllSettings()
+    {
+        AudioListener.volume = masterVolume;
+        if (isoCameraOrbit != null) isoCameraOrbit.MouseSensitivity = cameraSensitivity;
+        qualityLevel = Mathf.Clamp(qualityLevel, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
+        PerformanceBootstrap.ApplyQualityProfile(qualityLevel);
+        QualitySettings.vSyncCount = vSyncEnabled ? 1 : 0;
+        Screen.fullScreen = fullscreenEnabled;
         ApplyCameraMode(CameraSwitchTrigger.CurrentMode);
         RefreshOptionLabels();
     }
 
-    private void OpenMenu()
+    void OpenMenu()
     {
         Time.timeScale = 0f;
         SetGameplayEnabled(false);
-
-        if (menuRoot != null) menuRoot.SetActive(true);
-        if (optionsPanel != null) optionsPanel.SetActive(false);
-        if (extrasPanel != null) extrasPanel.SetActive(false);
-
+        menuRoot.SetActive(true);
+        optionsPanel.SetActive(false);
+        extrasPanel.SetActive(false);
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         CameraSwitchTrigger.SetMenuOpen(true);
-
-        RefreshSceneLabel();
+        SetMenuSceneCameraActive(true);
+        SetHudVisible(false);
+        RefreshPlayButtonLabel();
+        if (sceneLabelText != null) sceneLabelText.text = "SENAL PERDIDA // " + SceneManager.GetActiveScene().name.ToUpperInvariant();
     }
 
-    private void StartGame()
-    {
-        hasStartedGame = true;
-        CloseMenu();
-    }
-
-    private void CloseMenu()
+    void CloseMenu()
     {
         Time.timeScale = 1f;
         SetGameplayEnabled(true);
-
-        if (menuRoot != null) menuRoot.SetActive(false);
-        if (optionsPanel != null) optionsPanel.SetActive(false);
-        if (extrasPanel != null) extrasPanel.SetActive(false);
-
+        menuRoot.SetActive(false);
+        optionsPanel.SetActive(false);
+        extrasPanel.SetActive(false);
         CameraSwitchTrigger.SetMenuOpen(false);
+        SetMenuSceneCameraActive(false);
         CameraSwitchTrigger.RefreshGlobalCameraState();
+        SetHudVisible(true);
     }
 
-    private void SetGameplayEnabled(bool enabled)
+    void SetGameplayEnabled(bool enabled)
     {
         if (playerMovement != null) playerMovement.enabled = enabled;
         if (isoCameraOrbit != null) isoCameraOrbit.enabled = enabled;
     }
 
-    private void ToggleOptions()
+    void StartGame()
     {
-        bool nextState = !optionsPanel.activeSelf;
-        optionsPanel.SetActive(nextState);
-        extrasPanel.SetActive(false);
-        RefreshOptionLabels();
+        hasStartedGame = true;
+        RefreshPlayButtonLabel();
+        CloseMenu();
     }
-
-    private void ToggleExtras()
+    void ToggleOptions() { optionsPanel.SetActive(!optionsPanel.activeSelf); extrasPanel.SetActive(false); RefreshOptionLabels(); }
+    void ToggleExtras() { extrasPanel.SetActive(!extrasPanel.activeSelf); optionsPanel.SetActive(false); }
+    void ChangeVolume(float delta) { masterVolume = Mathf.Clamp01(masterVolume + delta); AudioListener.volume = masterVolume; SaveSettings(); RefreshOptionLabels(); }
+    void ChangeSensitivity(float delta) { cameraSensitivity = Mathf.Clamp(cameraSensitivity + delta, 1f, 20f); if (isoCameraOrbit != null) isoCameraOrbit.MouseSensitivity = cameraSensitivity; SaveSettings(); RefreshOptionLabels(); }
+    void CycleQuality() { qualityLevel = (qualityLevel + 1) % Mathf.Max(1, QualitySettings.names.Length); PerformanceBootstrap.ApplyQualityProfile(qualityLevel); SaveSettings(); RefreshOptionLabels(); }
+    void ToggleFullscreen() { fullscreenEnabled = !fullscreenEnabled; Screen.fullScreen = fullscreenEnabled; SaveSettings(); RefreshOptionLabels(); }
+    void ToggleVSync() { vSyncEnabled = !vSyncEnabled; QualitySettings.vSyncCount = vSyncEnabled ? 1 : 0; SaveSettings(); RefreshOptionLabels(); }
+    void ResetDefaults()
     {
-        bool nextState = !extrasPanel.activeSelf;
-        extrasPanel.SetActive(nextState);
-        optionsPanel.SetActive(false);
+        masterVolume = defaultMasterVolume;
+        cameraSensitivity = defaultCameraSensitivity;
+        qualityLevel = Mathf.Clamp(defaultQualityLevel, 0, Mathf.Max(0, QualitySettings.names.Length - 1));
+        fullscreenEnabled = defaultFullscreen;
+        vSyncEnabled = defaultVSync;
+        ApplyAllSettings();
+        SaveSettings();
     }
-
-    private void ChangeVolume(float delta)
-    {
-        masterVolume = Mathf.Clamp01(masterVolume + delta);
-        AudioListener.volume = masterVolume;
-        RefreshOptionLabels();
-    }
-
-    private void ChangeSensitivity(float delta)
-    {
-        if (isoCameraOrbit == null) return;
-
-        isoCameraOrbit.MouseSensitivity = Mathf.Max(0.5f, isoCameraOrbit.MouseSensitivity + delta);
-        RefreshOptionLabels();
-    }
-
-    private void RefreshOptionLabels()
-    {
-        if (volumeValueText != null)
-            volumeValueText.text = Mathf.RoundToInt(masterVolume * 100f) + "%";
-
-        if (sensitivityValueText != null)
-            sensitivityValueText.text = isoCameraOrbit != null ? isoCameraOrbit.MouseSensitivity.ToString("0.0") : "--";
-
-        RefreshCameraModeButtons();
-    }
-
-    private void RefreshSceneLabel()
-    {
-        if (sceneLabelText != null)
-            sceneLabelText.text = "SEÑAL PERDIDA // " + SceneManager.GetActiveScene().name.ToUpperInvariant();
-    }
-
-    private void QuitGame()
-    {
+    void QuitGame() {
 #if UNITY_EDITOR
         EditorApplication.isPlaying = false;
 #else
@@ -255,479 +220,267 @@ public class MainMenuController : MonoBehaviour
 #endif
     }
 
-    private void BuildMenu()
+    void RefreshOptionLabels()
+    {
+        if (volumeValueText != null) volumeValueText.text = Mathf.RoundToInt(masterVolume * 100f) + "%";
+        if (sensitivityValueText != null) sensitivityValueText.text = cameraSensitivity.ToString("0.0");
+        if (qualityValueText != null) qualityValueText.text = QualitySettings.names.Length > 0 ? QualitySettings.names[qualityLevel].ToUpperInvariant() : "N/A";
+        if (fullscreenValueText != null) fullscreenValueText.text = fullscreenEnabled ? "PANTALLA COMPLETA" : "VENTANA";
+        if (vSyncValueText != null) vSyncValueText.text = vSyncEnabled ? "ACTIVADO" : "DESACTIVADO";
+        RefreshModeButton(aerialModeButtonImage, aerialModeButtonText, CameraSwitchTrigger.CurrentMode == CameraSwitchTrigger.CameraMode.Aerea);
+        RefreshModeButton(firstPersonModeButtonImage, firstPersonModeButtonText, CameraSwitchTrigger.CurrentMode == CameraSwitchTrigger.CameraMode.PrimeraPersona);
+    }
+
+    void RefreshPlayButtonLabel()
+    {
+        if (playButtonText == null) return;
+        playButtonText.text = hasStartedGame ? "REANUDAR" : "JUGAR";
+    }
+
+    void ApplyCameraMode(CameraSwitchTrigger.CameraMode mode)
+    {
+        CameraSwitchTrigger.SetCameraMode(mode);
+        RefreshOptionLabels();
+    }
+
+    void RefreshModeButton(Image image, Text label, bool selected)
+    {
+        if (image == null || label == null) return;
+        image.color = selected ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.24f) : buttonColor;
+        label.color = selected ? Color.white : titleColor;
+    }
+
+    void BuildMenu()
     {
         EnsureEventSystem();
-
         GameObject canvasObject = CreateUiObject("HorrorMenuCanvas", null);
-        canvas = canvasObject.AddComponent<Canvas>();
+        Canvas canvas = canvasObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 100;
-
         canvasGroup = canvasObject.AddComponent<CanvasGroup>();
         canvasGroup.alpha = 0f;
-
         CanvasScaler scaler = canvasObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = 0.5f;
-
         canvasObject.AddComponent<GraphicRaycaster>();
         menuRoot = canvasObject;
 
-        RectTransform rootRect = canvasObject.GetComponent<RectTransform>();
-        StretchFull(rootRect);
+        Color backgroundColor = useSceneBackgroundCamera
+            ? new Color(0f, 0f, 0f, backgroundSprite != null ? 0.22f : 0.34f)
+            : backgroundSprite != null ? Color.white : new Color(0.02f, 0.02f, 0.03f, 1f);
+        Sprite backgroundAsset = useSceneBackgroundCamera ? null : backgroundSprite;
+        backgroundRect = CreateFullImage("Background", canvasObject.transform, backgroundAsset, backgroundColor).rectTransform;
+        CreateFullPanel("FogA", canvasObject.transform, new Color(0.02f, 0.03f, 0.04f, 0.50f));
+        CreateFullPanel("FogB", canvasObject.transform, new Color(0.12f, 0.02f, 0.02f, 0.08f));
+        CreateNoise(canvasObject.transform);
+        CreateFullPanel("BottomFade", canvasObject.transform, new Color(0f, 0f, 0f, 0.38f)).rectTransform.anchorMax = new Vector2(1f, 0.24f);
 
-        CreateBackground(canvasObject.transform);
-        CreateFogOverlay(canvasObject.transform, fogColorA, "FogA", out fogA);
-        CreateFogOverlay(canvasObject.transform, fogColorB, "FogB", out fogB);
-        CreateNoiseLines(canvasObject.transform);
-        CreateVignette(canvasObject.transform);
-        CreateFlashOverlay(canvasObject.transform);
-
-        GameObject centerPanel = CreatePanel("CenterPanel", canvasObject.transform, panelColor);
-        menuPanelRect = centerPanel.GetComponent<RectTransform>();
-        menuPanelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        menuPanelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        menuPanelRect.pivot = new Vector2(0.5f, 0.5f);
-        menuPanelRect.sizeDelta = new Vector2(700f, 740f);
-        menuPanelRect.anchoredPosition = new Vector2(0f, 10f);
-        menuPanelBasePos = menuPanelRect.anchoredPosition;
-        RegisterGlitchTarget(menuPanelRect);
-
-        AddOutline(centerPanel, new Color(1f, 1f, 1f, 0.04f), new Vector2(1f, -1f));
-
-        bool hasLogo = logoSprite != null;
-        float subtitleY = hasLogo ? -312f : -248f;
-        float separatorY = hasLogo ? -356f : -292f;
-        float firstButtonY = hasLogo ? -410f : -346f;
-
-        if (hasLogo)
+        Color effectivePanelColor = useSceneBackgroundCamera
+            ? new Color(0.01f, 0.02f, 0.03f, 0.16f)
+            : panelColor;
+        GameObject center = CreatePanel("CenterPanel", canvasObject.transform, effectivePanelColor);
+        RectTransform centerRect = center.GetComponent<RectTransform>();
+        centerRect.anchorMin = centerRect.anchorMax = new Vector2(0.5f, 0.5f);
+        centerRect.pivot = new Vector2(0.5f, 0.5f);
+        centerRect.sizeDelta = new Vector2(760f, 720f);
+        centerRect.anchoredPosition = new Vector2(0f, 12f);
+        if (!useSceneBackgroundCamera)
         {
-            titleRect = CreateLogo("Logo", centerPanel.transform, logoSprite, new Vector2(0f, -80f), new Vector2(220f, 220f));
-            titleBasePos = titleRect.anchoredPosition;
+            AddOutline(center, lineColor, new Vector2(1f, -1f));
+            AddShadow(center, new Color(0f, 0f, 0f, 0.55f), new Vector2(0f, -12f));
+            CreatePanel("TopStrip", center.transform, accentSoftColor).GetComponent<RectTransform>().SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 16f, 34f);
+        }
+
+        if (logoSprite != null)
+        {
+            titleRect = CreateImage("Logo", center.transform, logoSprite, new Vector2(0f, -78f), new Vector2(180f, 180f)).rectTransform;
         }
         else
         {
-            titleText = CreateText(
-                "Title",
-                centerPanel.transform,
-                gameTitle,
-                68,
-                FontStyle.Bold,
-                titleColor,
-                TextAnchor.MiddleCenter,
-                new Vector2(0f, -210f),
-                new Vector2(560f, 90f),
-                true);
-
-            titleRect = titleText.rectTransform;
-            titleBasePos = titleRect.anchoredPosition;
-            RegisterGlitchTarget(titleRect);
+            titleRect = CreateText("Title", center.transform, gameTitle, 74, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -160f), new Vector2(620f, 100f), true).rectTransform;
         }
+        titleBasePos = titleRect.anchoredPosition;
+        CreateText("Subtitle", center.transform, gameSubtitle, 18, FontStyle.Italic, accentColor, TextAnchor.MiddleCenter, new Vector2(0f, -244f), new Vector2(540f, 28f), false);
+        CreatePanel("Separator", center.transform, new Color(1f, 1f, 1f, 0.14f)).GetComponent<RectTransform>().SetAnchored(new Vector2(0f, -286f), new Vector2(220f, 1.5f));
+        CreateMenuButton(center.transform, "JUGAR", new Vector2(0f, -346f), 28, StartGame, true, out playButtonText);
+        CreateMenuButton(center.transform, "OPCIONES", new Vector2(0f, -404f), 20, ToggleOptions, false);
+        CreateMenuButton(center.transform, "EXTRAS", new Vector2(0f, -454f), 20, ToggleExtras, false);
+        CreateMenuButton(center.transform, "SALIR", new Vector2(0f, -504f), 20, QuitGame, false);
 
-        subtitleText = CreateText(
-            "Subtitle",
-            centerPanel.transform,
-            gameSubtitle,
-            18,
-            FontStyle.Italic,
-            accentColor,
-            TextAnchor.MiddleCenter,
-            new Vector2(0f, subtitleY),
-            new Vector2(520f, 30f),
-            false);
-
-        CreateSeparator(centerPanel.transform, new Vector2(0f, separatorY), new Vector2(300f, 2f));
-
-        CreateMenuButton("JUGAR", new Vector2(0f, firstButtonY), 30, centerPanel.transform, StartGame, true);
-        CreateMenuButton("OPCIONES", new Vector2(0f, firstButtonY - 70f), 24, centerPanel.transform, ToggleOptions, false);
-        CreateMenuButton("EXTRAS", new Vector2(0f, firstButtonY - 130f), 24, centerPanel.transform, ToggleExtras, false);
-        CreateMenuButton("SALIR", new Vector2(0f, firstButtonY - 190f), 24, centerPanel.transform, QuitGame, false);
-
-        whisperText = CreateText(
-            "WhisperText",
-            canvasObject.transform,
-            "...",
-            20,
-            FontStyle.Italic,
-            faintTextColor,
-            TextAnchor.MiddleCenter,
-            new Vector2(0f, -980f),
-            new Vector2(800f, 40f),
-            false);
-
-        sceneLabelText = CreateText(
-            "SceneLabel",
-            canvasObject.transform,
-            "",
-            14,
-            FontStyle.Normal,
-            faintTextColor,
-            TextAnchor.MiddleRight,
-            new Vector2(-40f, -40f),
-            new Vector2(400f, 24f),
-            false);
-        sceneLabelText.rectTransform.anchorMin = new Vector2(1f, 1f);
-        sceneLabelText.rectTransform.anchorMax = new Vector2(1f, 1f);
+        whisperText = CreateText("Whisper", canvasObject.transform, "...", 20, FontStyle.Italic, faintTextColor, TextAnchor.MiddleCenter, new Vector2(0f, -990f), new Vector2(900f, 40f), false);
+        sceneLabelText = CreateText("SceneLabel", canvasObject.transform, "", 14, FontStyle.Normal, faintTextColor, TextAnchor.MiddleRight, new Vector2(-40f, -40f), new Vector2(420f, 24f), false);
+        sceneLabelText.rectTransform.anchorMin = sceneLabelText.rectTransform.anchorMax = new Vector2(1f, 1f);
         sceneLabelText.rectTransform.pivot = new Vector2(1f, 1f);
 
-        optionsPanel = CreatePopupCard("OptionsPanel", canvasObject.transform, new Vector2(0.83f, 0.52f), new Vector2(430f, 340f));
-        RegisterGlitchTarget(optionsPanel.GetComponent<RectTransform>());
-
-        CreateText("OptionsTitle", optionsPanel.transform, "OPCIONES", 28, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -22f), new Vector2(280f, 40f), false);
-        CreateSeparator(optionsPanel.transform, new Vector2(0f, -65f), new Vector2(360f, 2f));
-        volumeValueText = CreateStepperRow(optionsPanel.transform, "VOLUMEN", new Vector2(26f, -110f), () => ChangeVolume(-0.1f), () => ChangeVolume(0.1f));
-        sensitivityValueText = CreateStepperRow(optionsPanel.transform, "SENSIBILIDAD", new Vector2(26f, -175f), () => ChangeSensitivity(-0.5f), () => ChangeSensitivity(0.5f));
-        CreateTopLeftText("CameraModeLabel", optionsPanel.transform, "MODO CAMARA", 17, FontStyle.Bold, textColor, TextAnchor.MiddleLeft, new Vector2(26f, -234f), new Vector2(220f, 30f), false);
-        CreateModeOptionButton("AerialModeButton", optionsPanel.transform, "AEREA", new Vector2(26f, -274f), new Vector2(154f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.Aerea), out aerialModeButtonImage, out aerialModeButtonText);
-        CreateModeOptionButton("FirstPersonModeButton", optionsPanel.transform, "PRIMERA PERSONA", new Vector2(194f, -274f), new Vector2(210f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.PrimeraPersona), out firstPersonModeButtonImage, out firstPersonModeButtonText);
+        optionsPanel = CreateCard(canvasObject.transform, "OptionsPanel", new Vector2(0.82f, 0.52f), new Vector2(500f, 580f));
+        BuildOptions(optionsPanel.transform);
         optionsPanel.SetActive(false);
-
-        extrasPanel = CreatePopupCard("ExtrasPanel", canvasObject.transform, new Vector2(0.83f, 0.52f), new Vector2(470f, 320f));
-        RegisterGlitchTarget(extrasPanel.GetComponent<RectTransform>());
-
-        CreateText("ExtrasTitle", extrasPanel.transform, "EXTRAS", 28, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -22f), new Vector2(260f, 40f), false);
-        CreateSeparator(extrasPanel.transform, new Vector2(0f, -65f), new Vector2(390f, 2f));
-
-        Text extrasBody = CreateTopLeftText(
-            "ExtrasBody",
-            extrasPanel.transform,
-            "OBJETIVO\n\nEncuentra una salida.\n\nRECUERDA\n\nNo todo lo que escuches es real.\nNo todo lo que veas está muerto.\n\nCONSEJO\n\nSi el silencio cambia... corre.",
-            18,
-            FontStyle.Normal,
-            textColor,
-            TextAnchor.UpperLeft,
-            new Vector2(24f, -90f),
-            new Vector2(390f, 210f),
-            false);
-        extrasBody.horizontalOverflow = HorizontalWrapMode.Wrap;
-        extrasBody.verticalOverflow = VerticalWrapMode.Overflow;
+        extrasPanel = CreateCard(canvasObject.transform, "ExtrasPanel", new Vector2(0.82f, 0.52f), new Vector2(500f, 340f));
+        BuildExtras(extrasPanel.transform);
         extrasPanel.SetActive(false);
     }
 
-    private void EnsureEventSystem()
+    void BuildOptions(Transform parent)
     {
-        if (FindObjectOfType<EventSystem>() != null) return;
-
-        GameObject eventSystemObject = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
-        DontDestroyOnLoad(eventSystemObject);
+        CreateText("OptionsTitle", parent, "AJUSTES", 30, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -24f), new Vector2(280f, 40f), false);
+        CreatePanel("Sep", parent, lineColor).GetComponent<RectTransform>().SetAnchored(new Vector2(0f, -76f), new Vector2(420f, 2f));
+        volumeValueText = CreateStepperRow(parent, "VOLUMEN GENERAL", new Vector2(30f, -122f), () => ChangeVolume(-0.1f), () => ChangeVolume(0.1f));
+        sensitivityValueText = CreateStepperRow(parent, "SENSIBILIDAD", new Vector2(30f, -182f), () => ChangeSensitivity(-0.5f), () => ChangeSensitivity(0.5f));
+        qualityValueText = CreateActionRow(parent, "GRAFICOS", new Vector2(30f, -242f), CycleQuality);
+        fullscreenValueText = CreateActionRow(parent, "PANTALLA", new Vector2(30f, -302f), ToggleFullscreen);
+        vSyncValueText = CreateActionRow(parent, "VSYNC", new Vector2(30f, -362f), ToggleVSync);
+        CreateLabel(parent, "MODO DE CAMARA", new Vector2(30f, -414f), new Vector2(220f, 28f));
+        CreateModeButton(parent, "AEREA", new Vector2(30f, -452f), new Vector2(174f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.Aerea), out aerialModeButtonImage, out aerialModeButtonText);
+        CreateModeButton(parent, "PRIMERA PERSONA", new Vector2(220f, -452f), new Vector2(220f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.PrimeraPersona), out firstPersonModeButtonImage, out firstPersonModeButtonText);
+        CreateButton(parent, "DefaultsButton", new Vector2(30f, -508f), new Vector2(410f, 38f), ResetDefaults);
+        CreateText("DefaultsLabel", parent.Find("DefaultsButton"), "RESTAURAR PREDETERMINADOS", 14, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, Vector2.zero, new Vector2(410f, 38f), false);
     }
 
-    private void CreateBackground(Transform parent)
+    void BuildExtras(Transform parent)
     {
-        GameObject background = CreateUiObject("Background", parent);
-        backgroundRect = background.GetComponent<RectTransform>();
-        StretchFull(backgroundRect);
-
-        Image image = background.AddComponent<Image>();
-        image.preserveAspect = false;
-
-        if (backgroundSprite != null)
-        {
-            image.sprite = backgroundSprite;
-            image.color = backgroundTint;
-        }
-        else
-        {
-            image.sprite = whiteSprite;
-            image.color = fallbackBackgroundColor;
-        }
+        CreateText("ExtrasTitle", parent, "INFORMACION", 30, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -24f), new Vector2(320f, 40f), false);
+        CreatePanel("Sep", parent, lineColor).GetComponent<RectTransform>().SetAnchored(new Vector2(0f, -72f), new Vector2(420f, 2f));
+        Text body = CreateTopLeftText("ExtrasBody", parent, "OBJETIVO\n\nEncuentra gasolina, consigue el mapa y reune documentos.\n\nCONTROLES\n\nWASD mover\nE interactuar\nM mapa\nTAB notas\nESC menu\n\nCONSEJO\n\nSi el silencio cambia, corre.", 18, FontStyle.Normal, textColor, TextAnchor.UpperLeft, new Vector2(28f, -100f), new Vector2(420f, 210f), false);
+        body.horizontalOverflow = HorizontalWrapMode.Wrap;
+        body.verticalOverflow = VerticalWrapMode.Overflow;
     }
 
-    private void CreateFogOverlay(Transform parent, Color color, string name, out Image imageOut)
+    Text CreateStepperRow(Transform parent, string label, Vector2 pos, UnityEngine.Events.UnityAction minus, UnityEngine.Events.UnityAction plus)
     {
-        GameObject overlay = CreatePanel(name, parent, color);
-        RectTransform rect = overlay.GetComponent<RectTransform>();
-        StretchFull(rect);
-        imageOut = overlay.GetComponent<Image>();
+        CreateLabel(parent, label, pos, new Vector2(200f, 28f));
+        CreateSmallButton(parent, "-", pos + new Vector2(248f, -2f), minus);
+        Text value = CreateTopLeftText(label + "Value", parent, "", 18, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, pos + new Vector2(306f, 0f), new Vector2(86f, 28f), false);
+        CreateSmallButton(parent, "+", pos + new Vector2(404f, -2f), plus);
+        return value;
     }
 
-    private void CreateFlashOverlay(Transform parent)
+    Text CreateActionRow(Transform parent, string label, Vector2 pos, UnityEngine.Events.UnityAction action)
     {
-        GameObject flash = CreatePanel("FlashOverlay", parent, new Color(0.35f, 0f, 0f, 0f));
-        RectTransform rect = flash.GetComponent<RectTransform>();
-        StretchFull(rect);
-        flashImage = flash.GetComponent<Image>();
+        CreateLabel(parent, label, pos, new Vector2(180f, 28f));
+        GameObject button = CreateButton(parent, label + "Action", pos + new Vector2(248f, -2f), new Vector2(198f, 36f), action);
+        return CreateText(label + "ActionText", button.transform, "", 15, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, Vector2.zero, new Vector2(198f, 36f), false);
     }
 
-    private void CreateNoiseLines(Transform parent)
+    void CreateLabel(Transform parent, string text, Vector2 pos, Vector2 size)
     {
-        for (int i = 0; i < 22; i++)
-        {
-            GameObject line = CreatePanel("Noise_" + i, parent, new Color(1f, 1f, 1f, Random.Range(0.004f, 0.015f)));
-            RectTransform rect = line.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0f, Random.Range(0f, 1f));
-            rect.anchorMax = new Vector2(1f, rect.anchorMin.y);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.sizeDelta = new Vector2(0f, Random.Range(1f, 2f));
-        }
+        CreateTopLeftText(text + "Label", parent, text, 16, FontStyle.Bold, textColor, TextAnchor.MiddleLeft, pos, size, false);
     }
 
-    private void CreateVignette(Transform parent)
+    void CreateModeButton(Transform parent, string text, Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction action, out Image image, out Text label)
     {
-        CreateEdge("TopVignette", parent, new Vector2(0f, 0.80f), new Vector2(1f, 1f), new Color(vignetteColor.r, vignetteColor.g, vignetteColor.b, 0.45f));
-        CreateEdge("BottomVignette", parent, new Vector2(0f, 0f), new Vector2(1f, 0.20f), new Color(vignetteColor.r, vignetteColor.g, vignetteColor.b, 0.65f));
-        CreateEdge("LeftVignette", parent, new Vector2(0f, 0f), new Vector2(0.14f, 1f), new Color(vignetteColor.r, vignetteColor.g, vignetteColor.b, 0.45f));
-        CreateEdge("RightVignette", parent, new Vector2(0.86f, 0f), new Vector2(1f, 1f), new Color(vignetteColor.r, vignetteColor.g, vignetteColor.b, 0.45f));
+        GameObject button = CreateButton(parent, text + "Mode", pos, size, action);
+        image = button.GetComponent<Image>();
+        label = CreateText(text + "ModeText", button.transform, text, 14, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, Vector2.zero, size, false);
     }
 
-    private void CreateEdge(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Color color)
+    GameObject CreateMenuButton(Transform parent, string label, Vector2 pos, int fontSize, UnityEngine.Events.UnityAction action, bool primary)
     {
-        GameObject edge = CreatePanel(name, parent, color);
-        RectTransform rect = edge.GetComponent<RectTransform>();
-        rect.anchorMin = anchorMin;
-        rect.anchorMax = anchorMax;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
+        return CreateMenuButton(parent, label, pos, fontSize, action, primary, out _);
     }
 
-    private GameObject CreatePopupCard(string name, Transform parent, Vector2 anchor, Vector2 size)
+    GameObject CreateMenuButton(Transform parent, string label, Vector2 pos, int fontSize, UnityEngine.Events.UnityAction action, bool primary, out Text labelText)
     {
-        GameObject card = CreatePanel(name, parent, new Color(0f, 0f, 0f, 0.78f));
-        RectTransform rect = card.GetComponent<RectTransform>();
-        rect.anchorMin = anchor;
-        rect.anchorMax = anchor;
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.sizeDelta = size;
-
-        AddOutline(card, lineColor, new Vector2(1f, -1f));
-        Shadow shadow = card.AddComponent<Shadow>();
-        shadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
-        shadow.effectDistance = new Vector2(0f, -6f);
-
-        return card;
-    }
-
-    private void CreateSeparator(Transform parent, Vector2 anchoredPosition, Vector2 size)
-    {
-        GameObject separator = CreatePanel("Separator", parent, lineColor);
-        RectTransform rect = separator.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 1f);
-        rect.anchorMax = new Vector2(0.5f, 1f);
+        GameObject button = CreateButton(parent, label + "Button", pos, new Vector2(320f, primary ? 42f : 34f), action);
+        RectTransform rect = button.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
         rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = anchoredPosition;
-        rect.sizeDelta = size;
-    }
-
-    private Text CreateStepperRow(Transform parent, string label, Vector2 anchoredPosition, UnityEngine.Events.UnityAction onMinus, UnityEngine.Events.UnityAction onPlus)
-    {
-        CreateTopLeftText(label + "Label", parent, label, 18, FontStyle.Bold, textColor, TextAnchor.MiddleLeft, anchoredPosition, new Vector2(170f, 30f), false);
-        CreateCompactButton("-", parent, anchoredPosition + new Vector2(214f, -2f), onMinus);
-        Text valueText = CreateTopLeftText(label + "Value", parent, "", 18, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, anchoredPosition + new Vector2(268f, 0f), new Vector2(64f, 30f), false);
-        CreateCompactButton("+", parent, anchoredPosition + new Vector2(362f, -2f), onPlus);
-        return valueText;
-    }
-
-    private void CreateModeOptionButton(string name, Transform parent, string label, Vector2 anchoredPosition, Vector2 size, UnityEngine.Events.UnityAction action, out Image buttonImage, out Text buttonText)
-    {
-        GameObject buttonObject = CreateUiObject(name, parent);
-        RectTransform rect = buttonObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0f, 1f);
-        rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = anchoredPosition;
-        rect.sizeDelta = size;
-
-        buttonImage = buttonObject.AddComponent<Image>();
-        buttonImage.sprite = whiteSprite;
-        buttonImage.color = buttonNormalColor;
-
-        AddOutline(buttonObject, new Color(1f, 1f, 1f, 0.05f), new Vector2(1f, -1f));
-
-        Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = buttonImage;
-        button.onClick.AddListener(action);
-
-        ColorBlock colors = button.colors;
-        colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1f, 0.95f, 0.95f, 1f);
-        colors.pressedColor = new Color(0.85f, 0.80f, 0.80f, 1f);
-        colors.selectedColor = colors.highlightedColor;
-        button.colors = colors;
-
-        buttonText = CreateText(name + "Text", buttonObject.transform, label, 15, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, Vector2.zero, rect.sizeDelta, false);
-    }
-
-    private void CreateCompactButton(string label, Transform parent, Vector2 anchoredPosition, UnityEngine.Events.UnityAction action)
-    {
-        GameObject buttonObject = CreateUiObject(label + "Button", parent);
-        RectTransform rect = buttonObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0f, 1f);
-        rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = anchoredPosition;
-        rect.sizeDelta = new Vector2(42f, 34f);
-
-        Image image = buttonObject.AddComponent<Image>();
-        image.sprite = whiteSprite;
-        image.color = new Color(1f, 1f, 1f, 0.04f);
-
-        AddOutline(buttonObject, new Color(accentColor.r, accentColor.g, accentColor.b, 0.25f), new Vector2(1f, -1f));
-
-        Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
-        button.onClick.AddListener(action);
-
-        ColorBlock colors = button.colors;
-        colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1f, 0.9f, 0.9f, 1f);
-        colors.pressedColor = new Color(0.8f, 0.7f, 0.7f, 1f);
-        colors.selectedColor = colors.highlightedColor;
-        button.colors = colors;
-
-        CreateText(label + "Text", buttonObject.transform, label, 20, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, Vector2.zero, rect.sizeDelta, false);
-    }
-
-    private void CreateMenuButton(string label, Vector2 anchoredPosition, int fontSize, Transform parent, UnityEngine.Events.UnityAction action, bool primary)
-    {
-        GameObject buttonObject = CreateUiObject(label + "Button", parent);
-        RectTransform rect = buttonObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 1f);
-        rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = anchoredPosition;
-        rect.sizeDelta = new Vector2(320f, primary ? 52f : 46f);
-
-        Image image = buttonObject.AddComponent<Image>();
-        image.sprite = whiteSprite;
-        image.color = primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.12f) : buttonNormalColor;
-
-        Button button = buttonObject.AddComponent<Button>();
-        button.targetGraphic = image;
-        button.onClick.AddListener(action);
-
-        ColorBlock colors = button.colors;
-        colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1f, 1f, 1f, 1.05f);
-        colors.pressedColor = new Color(0.85f, 0.80f, 0.80f, 1f);
-        colors.selectedColor = colors.highlightedColor;
-        button.colors = colors;
-
-        AddOutline(buttonObject, primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.40f) : new Color(1f, 1f, 1f, 0.05f), new Vector2(1f, -1f));
-
-        Text txt = CreateText(label + "Text", buttonObject.transform, label, fontSize, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, Vector2.zero, rect.sizeDelta, false);
-
-        EventTrigger trigger = buttonObject.AddComponent<EventTrigger>();
-
+        rect.anchoredPosition = pos;
+        Image image = button.GetComponent<Image>();
+        image.color = primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.10f) : new Color(1f, 1f, 1f, 0.01f);
+        Outline outline = button.GetComponent<Outline>();
+        if (outline != null)
+        {
+            outline.effectColor = primary ? new Color(1f, 1f, 1f, 0.18f) : new Color(1f, 1f, 1f, 0.10f);
+            outline.effectDistance = new Vector2(1f, -1f);
+        }
+        Text buttonLabel = CreateText(label + "Text", button.transform, label, fontSize, FontStyle.Bold, primary ? Color.white : titleColor, TextAnchor.MiddleCenter, Vector2.zero, rect.sizeDelta, false);
+        labelText = buttonLabel;
+        EventTrigger trigger = button.AddComponent<EventTrigger>();
         AddEvent(trigger, EventTriggerType.PointerEnter, () =>
         {
             image.color = primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.22f) : buttonHoverColor;
-            txt.color = Color.Lerp(titleColor, new Color(1f, 0.85f, 0.85f, 1f), 0.35f);
+            rect.localScale = new Vector3(1.02f, 1.02f, 1f);
+            buttonLabel.color = Color.white;
         });
-
         AddEvent(trigger, EventTriggerType.PointerExit, () =>
         {
-            image.color = primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.12f) : buttonNormalColor;
-            txt.color = titleColor;
+            image.color = primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.10f) : new Color(1f, 1f, 1f, 0.01f);
+            rect.localScale = Vector3.one;
+            buttonLabel.color = primary ? Color.white : titleColor;
         });
-
-        RegisterGlitchTarget(rect);
+        return button;
     }
 
-    private void AddEvent(EventTrigger trigger, EventTriggerType type, UnityEngine.Events.UnityAction action)
+    void CreateSmallButton(Transform parent, string label, Vector2 pos, UnityEngine.Events.UnityAction action)
     {
-        EventTrigger.Entry entry = new EventTrigger.Entry();
-        entry.eventID = type;
-        entry.callback.AddListener(_ => action.Invoke());
-        trigger.triggers.Add(entry);
+        GameObject button = CreateButton(parent, label + "SmallButton", pos, new Vector2(40f, 34f), action);
+        CreateText(label + "SmallText", button.transform, label, 20, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, Vector2.zero, new Vector2(40f, 34f), false);
     }
 
-    private Text CreateText(
-        string name,
-        Transform parent,
-        string content,
-        int fontSize,
-        FontStyle fontStyle,
-        Color color,
-        TextAnchor alignment,
-        Vector2 anchoredPosition,
-        Vector2 size,
-        bool heavyShadow)
+    GameObject CreateButton(Transform parent, string name, Vector2 pos, Vector2 size, UnityEngine.Events.UnityAction action)
     {
-        GameObject textObject = CreateUiObject(name, parent);
-        RectTransform rect = textObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 1f);
-        rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = anchoredPosition;
-        rect.sizeDelta = size;
-
-        Text text = textObject.AddComponent<Text>();
-        text.font = uiFont;
-        text.text = content;
-        text.fontSize = fontSize;
-        text.fontStyle = fontStyle;
-        text.color = color;
-        text.alignment = alignment;
-
-        Shadow shadow = textObject.AddComponent<Shadow>();
-        shadow.effectColor = heavyShadow ? new Color(0f, 0f, 0f, 0.8f) : new Color(0f, 0f, 0f, 0.35f);
-        shadow.effectDistance = heavyShadow ? new Vector2(3f, -3f) : new Vector2(1f, -1f);
-
-        return text;
-    }
-
-    private Text CreateTopLeftText(
-        string name,
-        Transform parent,
-        string content,
-        int fontSize,
-        FontStyle fontStyle,
-        Color color,
-        TextAnchor alignment,
-        Vector2 anchoredPosition,
-        Vector2 size,
-        bool heavyShadow)
-    {
-        GameObject textObject = CreateUiObject(name, parent);
-        RectTransform rect = textObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0f, 1f);
-        rect.anchorMax = new Vector2(0f, 1f);
+        GameObject button = CreateUiObject(name, parent);
+        RectTransform rect = button.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
         rect.pivot = new Vector2(0f, 1f);
-        rect.anchoredPosition = anchoredPosition;
+        rect.anchoredPosition = pos;
         rect.sizeDelta = size;
-
-        Text text = textObject.AddComponent<Text>();
-        text.font = uiFont;
-        text.text = content;
-        text.fontSize = fontSize;
-        text.fontStyle = fontStyle;
-        text.color = color;
-        text.alignment = alignment;
-
-        Shadow shadow = textObject.AddComponent<Shadow>();
-        shadow.effectColor = heavyShadow ? new Color(0f, 0f, 0f, 0.8f) : new Color(0f, 0f, 0f, 0.35f);
-        shadow.effectDistance = heavyShadow ? new Vector2(3f, -3f) : new Vector2(1f, -1f);
-
-        return text;
+        Image image = button.AddComponent<Image>();
+        image.sprite = whiteSprite;
+        image.color = buttonColor;
+        AddOutline(button, new Color(1f, 1f, 1f, 0.05f), new Vector2(1f, -1f));
+        Button uiButton = button.AddComponent<Button>();
+        uiButton.targetGraphic = image;
+        uiButton.onClick.AddListener(action);
+        return button;
     }
 
-    private RectTransform CreateLogo(string name, Transform parent, Sprite sprite, Vector2 anchoredPosition, Vector2 size)
+    GameObject CreateCard(Transform parent, string name, Vector2 anchor, Vector2 size)
     {
-        GameObject logoObject = CreateUiObject(name, parent);
-        RectTransform rect = logoObject.GetComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0.5f, 1f);
-        rect.anchorMax = new Vector2(0.5f, 1f);
-        rect.pivot = new Vector2(0.5f, 1f);
-        rect.anchoredPosition = anchoredPosition;
+        GameObject card = CreatePanel(name, parent, new Color(0.02f, 0.03f, 0.04f, 0.90f));
+        RectTransform rect = card.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = anchor;
+        rect.pivot = new Vector2(0.5f, 0.5f);
         rect.sizeDelta = size;
-
-        Image image = logoObject.AddComponent<Image>();
-        image.sprite = sprite;
-        image.color = Color.white;
-        image.preserveAspect = true;
-
-        Shadow shadow = logoObject.AddComponent<Shadow>();
-        shadow.effectColor = new Color(0f, 0f, 0f, 0.70f);
-        shadow.effectDistance = new Vector2(8f, -8f);
-
-        RegisterGlitchTarget(rect);
-        return rect;
+        AddOutline(card, lineColor, new Vector2(1f, -1f));
+        AddShadow(card, new Color(0f, 0f, 0f, 0.55f), new Vector2(0f, -8f));
+        return card;
     }
 
-    private GameObject CreatePanel(string name, Transform parent, Color color)
+    Image CreateImage(string name, Transform parent, Sprite sprite, Vector2 pos, Vector2 size)
+    {
+        Image image = CreateUiObject(name, parent).AddComponent<Image>();
+        RectTransform rect = image.rectTransform;
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size;
+        image.sprite = sprite;
+        image.preserveAspect = true;
+        return image;
+    }
+
+    Image CreateFullImage(string name, Transform parent, Sprite sprite, Color color)
+    {
+        Image image = CreateUiObject(name, parent).AddComponent<Image>();
+        StretchFull(image.rectTransform);
+        image.sprite = sprite != null ? sprite : whiteSprite;
+        image.color = color;
+        return image;
+    }
+
+    Image CreateFullPanel(string name, Transform parent, Color color)
+    {
+        Image image = CreateUiObject(name, parent).AddComponent<Image>();
+        StretchFull(image.rectTransform);
+        image.sprite = whiteSprite;
+        image.color = color;
+        return image;
+    }
+
+    GameObject CreatePanel(string name, Transform parent, Color color)
     {
         GameObject panel = CreateUiObject(name, parent);
         Image image = panel.AddComponent<Image>();
@@ -736,21 +489,54 @@ public class MainMenuController : MonoBehaviour
         return panel;
     }
 
-    private void AddOutline(GameObject go, Color color, Vector2 distance)
+    void CreateNoise(Transform parent)
+    {
+        for (int i = 0; i < 20; i++)
+        {
+            Image line = CreateFullPanel("Noise" + i, parent, new Color(1f, 1f, 1f, Random.Range(0.003f, 0.010f)));
+            RectTransform rect = line.rectTransform;
+            rect.anchorMin = new Vector2(0f, Random.Range(0f, 1f));
+            rect.anchorMax = new Vector2(1f, rect.anchorMin.y);
+            rect.sizeDelta = new Vector2(0f, Random.Range(1f, 2f));
+        }
+    }
+
+    void AddEvent(EventTrigger trigger, EventTriggerType type, UnityEngine.Events.UnityAction action)
+    {
+        EventTrigger.Entry entry = new EventTrigger.Entry { eventID = type };
+        entry.callback.AddListener(_ => action.Invoke());
+        trigger.triggers.Add(entry);
+    }
+
+    void AddOutline(GameObject go, Color color, Vector2 distance)
     {
         Outline outline = go.AddComponent<Outline>();
         outline.effectColor = color;
         outline.effectDistance = distance;
     }
 
-    private GameObject CreateUiObject(string name, Transform parent)
+    void AddShadow(GameObject go, Color color, Vector2 distance)
+    {
+        Shadow shadow = go.AddComponent<Shadow>();
+        shadow.effectColor = color;
+        shadow.effectDistance = distance;
+    }
+
+    GameObject CreateUiObject(string name, Transform parent)
     {
         GameObject go = new GameObject(name, typeof(RectTransform));
         if (parent != null) go.transform.SetParent(parent, false);
         return go;
     }
 
-    private void StretchFull(RectTransform rect)
+    void EnsureEventSystem()
+    {
+        if (FindObjectOfType<EventSystem>() != null) return;
+        GameObject eventSystemObject = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+        DontDestroyOnLoad(eventSystemObject);
+    }
+
+    void StretchFull(RectTransform rect)
     {
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
@@ -758,221 +544,269 @@ public class MainMenuController : MonoBehaviour
         rect.offsetMax = Vector2.zero;
     }
 
-    private Sprite CreateWhiteSprite()
+    Text CreateText(string name, Transform parent, string content, int fontSize, FontStyle style, Color color, TextAnchor alignment, Vector2 pos, Vector2 size, bool heavy)
     {
-        Rect rect = new Rect(0f, 0f, Texture2D.whiteTexture.width, Texture2D.whiteTexture.height);
-        return Sprite.Create(Texture2D.whiteTexture, rect, new Vector2(0.5f, 0.5f));
+        GameObject go = CreateUiObject(name, parent);
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size;
+        Text text = go.AddComponent<Text>();
+        text.font = uiFont;
+        text.text = content;
+        text.fontSize = fontSize;
+        text.fontStyle = style;
+        text.color = color;
+        text.alignment = alignment;
+        Shadow shadow = go.AddComponent<Shadow>();
+        shadow.effectColor = heavy ? new Color(0f, 0f, 0f, 0.8f) : new Color(0f, 0f, 0f, 0.40f);
+        shadow.effectDistance = heavy ? new Vector2(3f, -3f) : new Vector2(1f, -1f);
+        return text;
     }
 
-    private void RegisterGlitchTarget(RectTransform rect)
+    Text CreateTopLeftText(string name, Transform parent, string content, int fontSize, FontStyle style, Color color, TextAnchor alignment, Vector2 pos, Vector2 size, bool heavy)
     {
-        if (rect == null || glitchTargets.Contains(rect)) return;
-
-        glitchTargets.Add(rect);
-        originalPositions[rect] = rect.anchoredPosition;
+        GameObject go = CreateUiObject(name, parent);
+        RectTransform rect = go.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size;
+        Text text = go.AddComponent<Text>();
+        text.font = uiFont;
+        text.text = content;
+        text.fontSize = fontSize;
+        text.fontStyle = style;
+        text.color = color;
+        text.alignment = alignment;
+        Shadow shadow = go.AddComponent<Shadow>();
+        shadow.effectColor = heavy ? new Color(0f, 0f, 0f, 0.8f) : new Color(0f, 0f, 0f, 0.35f);
+        shadow.effectDistance = heavy ? new Vector2(3f, -3f) : new Vector2(1f, -1f);
+        return text;
     }
 
-    private void ApplyCameraMode(CameraSwitchTrigger.CameraMode mode)
+    IEnumerator FadeIn()
     {
-        CameraSwitchTrigger.SetCameraMode(mode);
-        RefreshCameraModeButtons();
-    }
-
-    private void RefreshCameraModeButtons()
-    {
-        RefreshModeButtonVisual(aerialModeButtonImage, aerialModeButtonText, CameraSwitchTrigger.CurrentMode == CameraSwitchTrigger.CameraMode.Aerea);
-        RefreshModeButtonVisual(firstPersonModeButtonImage, firstPersonModeButtonText, CameraSwitchTrigger.CurrentMode == CameraSwitchTrigger.CameraMode.PrimeraPersona);
-    }
-
-    private void RefreshModeButtonVisual(Image backgroundImage, Text label, bool selected)
-    {
-        if (backgroundImage == null || label == null)
-        {
-            return;
-        }
-
-        backgroundImage.color = selected
-            ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.22f)
-            : new Color(1f, 1f, 1f, 0.04f);
-
-        label.color = selected
-            ? Color.Lerp(titleColor, new Color(1f, 0.86f, 0.86f, 1f), 0.25f)
-            : titleColor;
-    }
-
-    private void HandleEscapeMenu()
-    {
-        if (!hasStartedGame || !Input.GetKeyDown(KeyCode.Escape))
-        {
-            return;
-        }
-
-        if (menuRoot != null && menuRoot.activeSelf)
-        {
-            CloseMenu();
-        }
-        else
-        {
-            OpenMenu();
-        }
-    }
-
-    private void AnimateBackground()
-    {
-        if (backgroundRect == null || menuRoot == null || !menuRoot.activeInHierarchy) return;
-
-        float x = Mathf.Sin(Time.unscaledTime * backgroundDriftSpeed) * backgroundDriftAmount;
-        float y = Mathf.Cos(Time.unscaledTime * backgroundDriftSpeed * 0.7f) * (backgroundDriftAmount * 0.55f);
-        backgroundRect.localPosition = new Vector3(x, y, 0f);
-    }
-
-    private void AnimateFog()
-    {
-        if (fogA != null)
-        {
-            float a = fogColorA.a * (0.90f + Mathf.Sin(Time.unscaledTime * 0.8f) * 0.10f);
-            fogA.color = new Color(fogColorA.r, fogColorA.g, fogColorA.b, a);
-        }
-
-        if (fogB != null)
-        {
-            float a = fogColorB.a * (0.85f + Mathf.Cos(Time.unscaledTime * 0.55f) * 0.20f);
-            fogB.color = new Color(fogColorB.r, fogColorB.g, fogColorB.b, a);
-        }
-    }
-
-    private void AnimateTitle()
-    {
-        if (titleRect == null || menuRoot == null || !menuRoot.activeInHierarchy) return;
-
-        titleRect.anchoredPosition = titleBasePos + new Vector2(0f, Mathf.Sin(Time.unscaledTime * titleBreathSpeed) * titleBreathAmount);
-    }
-
-    private IEnumerator PlayIntroFade()
-    {
-        if (canvasGroup == null) yield break;
-
         float elapsed = 0f;
-        while (elapsed < introFadeDuration)
+        while (elapsed < 2.2f)
         {
             elapsed += Time.unscaledDeltaTime;
-            float t = Mathf.Clamp01(elapsed / introFadeDuration);
-            canvasGroup.alpha = Mathf.SmoothStep(0f, 1f, t);
+            canvasGroup.alpha = Mathf.SmoothStep(0f, 1f, elapsed / 2.2f);
             yield return null;
         }
-
         canvasGroup.alpha = 1f;
     }
 
-    private IEnumerator AmbienceLoop()
+    IEnumerator WhisperLoop()
     {
+        string[] lines = { "NO ESTAS SOLO", "ALGO TE OBSERVA", "NO MIRES DETRAS DE TI", "SIGUE RESPIRANDO", "NO DEBISTE ENTRAR" };
         while (true)
         {
-            if (menuPanelRect != null && menuRoot != null && menuRoot.activeInHierarchy)
-            {
-                float driftX = Mathf.Sin(Time.unscaledTime * 0.25f) * 1.2f;
-                float driftY = Mathf.Cos(Time.unscaledTime * 0.18f) * 1.6f;
-                menuPanelRect.anchoredPosition = menuPanelBasePos + new Vector2(driftX, driftY);
-            }
-
-            yield return null;
-        }
-    }
-
-    private IEnumerator GlitchLoop()
-    {
-        float chance = Mathf.Max(0.01f, glitchChancePerSecond);
-
-        while (true)
-        {
-            yield return new WaitForSecondsRealtime(Random.Range(1.5f, 4f) / chance);
-
-            if (menuRoot == null || !menuRoot.activeInHierarchy || glitchTargets.Count == 0) continue;
-
-            for (int i = 0; i < glitchTargets.Count; i++)
-            {
-                RectTransform rect = glitchTargets[i];
-                if (rect == null || !originalPositions.ContainsKey(rect)) continue;
-
-                rect.anchoredPosition = originalPositions[rect] + Random.insideUnitCircle * glitchIntensity;
-            }
-
-            if (titleText != null)
-                titleText.color = Color.Lerp(titleColor, accentColor, 0.28f);
-
-            if (flashImage != null)
-                flashImage.color = new Color(0.35f, 0f, 0f, Random.Range(0.03f, 0.09f));
-
-            yield return new WaitForSecondsRealtime(glitchDuration);
-
-            for (int i = 0; i < glitchTargets.Count; i++)
-            {
-                RectTransform rect = glitchTargets[i];
-                if (rect == null || !originalPositions.ContainsKey(rect)) continue;
-
-                rect.anchoredPosition = originalPositions[rect];
-            }
-
-            if (titleText != null)
-                titleText.color = titleColor;
-
-            if (flashImage != null)
-                flashImage.color = new Color(0.35f, 0f, 0f, 0f);
-        }
-    }
-
-    private IEnumerator FlickerLoop()
-    {
-        float chance = Mathf.Max(0.01f, flickerChancePerSecond);
-
-        while (true)
-        {
-            yield return new WaitForSecondsRealtime(Random.Range(2f, 5f) / chance);
-
-            if (canvasGroup == null || menuRoot == null || !menuRoot.activeInHierarchy || canvasGroup.alpha < 0.99f)
-                continue;
-
-            float originalAlpha = canvasGroup.alpha;
-
-            canvasGroup.alpha = Mathf.Clamp01(originalAlpha - Random.Range(0.05f, 0.14f));
-            yield return new WaitForSecondsRealtime(0.04f);
-            canvasGroup.alpha = originalAlpha;
-
-            if (Random.value > 0.65f)
-            {
-                canvasGroup.alpha = Mathf.Clamp01(originalAlpha - Random.Range(0.02f, 0.08f));
-                yield return new WaitForSecondsRealtime(0.03f);
-                canvasGroup.alpha = originalAlpha;
-            }
-        }
-    }
-
-    private IEnumerator WhisperLoop()
-    {
-        while (true)
-        {
-            if (whisperText != null)
-            {
-                whisperText.text = whisperLines[Random.Range(0, whisperLines.Length)];
-                whisperText.color = new Color(faintTextColor.r, faintTextColor.g, faintTextColor.b, Random.Range(0.55f, 0.95f));
-            }
-
+            if (whisperText != null) whisperText.text = lines[Random.Range(0, lines.Length)];
             yield return new WaitForSecondsRealtime(Random.Range(3f, 6f));
         }
     }
 
-    private Font LoadUiFont()
+    Font LoadUiFont()
     {
-        Font font = null;
-
         try
         {
-            font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Font builtIn = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (builtIn != null) return builtIn;
         }
         catch { }
+        return Font.CreateDynamicFontFromOSFont(new[] { "Segoe UI", "Tahoma", "Arial" }, 16);
+    }
 
-        if (font != null) return font;
+    Sprite CreateWhiteSprite()
+    {
+        return Sprite.Create(Texture2D.whiteTexture, new Rect(0f, 0f, Texture2D.whiteTexture.width, Texture2D.whiteTexture.height), new Vector2(0.5f, 0.5f));
+    }
 
-        return Font.CreateDynamicFontFromOSFont(new[] { "Arial", "Segoe UI", "Tahoma" }, 16);
+    void EnsureMenuCameraRig()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            if (gameObject == null ||
+                EditorUtility.IsPersistent(gameObject) ||
+                PrefabUtility.IsPartOfPrefabAsset(gameObject))
+            {
+                return;
+            }
+        }
+#endif
+
+        menuCameraRigRoot = transform.Find("MenuCameraRig");
+        if (menuCameraRigRoot == null)
+        {
+            GameObject rigObject = new GameObject("MenuCameraRig", typeof(Transform));
+            rigObject.transform.SetParent(transform, false);
+            rigObject.transform.localPosition = new Vector3(-12f, 5f, -10f);
+            rigObject.transform.localRotation = Quaternion.identity;
+            menuCameraRigRoot = rigObject.transform;
+        }
+
+        menuCameraTarget = menuCameraRigRoot.Find("MenuCameraTarget");
+        if (menuCameraTarget == null)
+        {
+            GameObject targetObject = new GameObject("MenuCameraTarget", typeof(Transform));
+            targetObject.transform.SetParent(menuCameraRigRoot, false);
+            targetObject.transform.localPosition = new Vector3(0f, 1.6f, 6f);
+            targetObject.transform.localRotation = Quaternion.identity;
+            menuCameraTarget = targetObject.transform;
+        }
+
+        Transform cameraTransform = menuCameraRigRoot.Find("MenuBackgroundCamera");
+        if (cameraTransform == null)
+        {
+            GameObject cameraObject = new GameObject("MenuBackgroundCamera", typeof(Camera), typeof(MenuSceneCameraMotion));
+            cameraObject.transform.SetParent(menuCameraRigRoot, false);
+            cameraObject.transform.localPosition = Vector3.zero;
+            cameraObject.transform.localRotation = Quaternion.identity;
+            cameraTransform = cameraObject.transform;
+        }
+
+        menuBackgroundCamera = cameraTransform.GetComponent<Camera>();
+        if (menuBackgroundCamera == null)
+        {
+            menuBackgroundCamera = cameraTransform.gameObject.AddComponent<Camera>();
+        }
+
+        menuBackgroundCamera.tag = "Untagged";
+        menuBackgroundCamera.enabled = false;
+        menuBackgroundCamera.clearFlags = CameraClearFlags.Skybox;
+        menuBackgroundCamera.orthographic = false;
+        menuBackgroundCamera.fieldOfView = 48f;
+        menuBackgroundCamera.nearClipPlane = 0.1f;
+        menuBackgroundCamera.farClipPlane = 1000f;
+        menuBackgroundCamera.depth = 5f;
+        menuBackgroundCamera.allowHDR = true;
+        menuBackgroundCamera.allowMSAA = true;
+
+        AudioListener menuListener = cameraTransform.GetComponent<AudioListener>();
+        if (menuListener != null)
+        {
+            menuListener.enabled = false;
+        }
+
+        MenuSceneCameraMotion motion = cameraTransform.GetComponent<MenuSceneCameraMotion>();
+        if (motion == null)
+        {
+            motion = cameraTransform.gameObject.AddComponent<MenuSceneCameraMotion>();
+        }
+
+        motion.LookTarget = menuCameraTarget;
+    }
+
+    void SetMenuSceneCameraActive(bool isActive)
+    {
+        if (!useSceneBackgroundCamera)
+        {
+            if (menuBackgroundCamera != null)
+            {
+                menuBackgroundCamera.enabled = false;
+            }
+
+            return;
+        }
+
+        EnsureMenuCameraRig();
+
+        if (menuBackgroundCamera != null)
+        {
+            menuBackgroundCamera.enabled = isActive;
+        }
+
+        if (gameplayCamera != null)
+        {
+            gameplayCamera.enabled = !isActive;
+        }
+
+        if (gameplayAudioListener != null)
+        {
+            gameplayAudioListener.enabled = !isActive;
+        }
+
+        if (gameplayCinemachineBrain != null)
+        {
+            gameplayCinemachineBrain.enabled = !isActive;
+        }
+    }
+
+    void SetHudVisible(bool visible)
+    {
+        if (notesHudRoot != null)
+        {
+            notesHudRoot.SetActive(visible);
+        }
+
+        if (interactHudRoot != null)
+        {
+            interactHudRoot.SetActive(visible);
+        }
+
+        if (messageHudRoot != null)
+        {
+            messageHudRoot.SetActive(visible);
+        }
+
+        if (fpsHudRoot != null)
+        {
+            fpsHudRoot.SetActive(visible);
+        }
+
+        if (ObjectiveSystem.HasInstance)
+        {
+            ObjectiveSystem.Instance.SetHudVisible(visible);
+        }
+    }
+
+    void CacheGameplayHudRoots()
+    {
+        notesHudRoot = GameObject.Find("CanvasNotas");
+        interactHudRoot = GameObject.Find("InteractText");
+        messageHudRoot = GameObject.Find("Mensajes");
+        fpsHudRoot = GameObject.Find("FPSDisplay");
+    }
+
+#if UNITY_EDITOR
+    void OnValidate()
+    {
+        if (Application.isPlaying)
+        {
+            return;
+        }
+
+        EditorApplication.delayCall -= DelayedEnsureMenuRig;
+        EditorApplication.delayCall += DelayedEnsureMenuRig;
+    }
+
+    void DelayedEnsureMenuRig()
+    {
+        if (this == null || gameObject == null)
+        {
+            return;
+        }
+
+        if (EditorUtility.IsPersistent(gameObject) || PrefabUtility.IsPartOfPrefabAsset(gameObject))
+        {
+            return;
+        }
+
+        EnsureMenuCameraRig();
+    }
+#endif
+}
+
+static class RectTransformMenuExtensions
+{
+    public static void SetAnchored(this RectTransform rect, Vector2 position, Vector2 size)
+    {
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+        rect.pivot = new Vector2(0.5f, 1f);
+        rect.anchoredPosition = position;
+        rect.sizeDelta = size;
     }
 }
