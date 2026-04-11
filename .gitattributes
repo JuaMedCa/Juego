@@ -1,1 +1,24 @@
+# Unity text-serialized files should use UnityYAMLMerge.
+*.unity merge=unityyamlmerge
+*.prefab merge=unityyamlmerge
+*.asset merge=unityyamlmerge
+*.mat merge=unityyamlmerge
+*.anim merge=unityyamlmerge
+*.controller merge=unityyamlmerge
+*.overrideController merge=unityyamlmerge
+*.meta merge=unityyamlmerge
+
+# Improve C# diffs in Git tools.
+*.cs diff=csharp
+
+# Binary assets should not be line-merged.
 *.tif !text !filter !merge !diff
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.fbx binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
+*.ttf binary
+*.otf binary
