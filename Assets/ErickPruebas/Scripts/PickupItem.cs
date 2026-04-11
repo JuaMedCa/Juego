@@ -13,11 +13,14 @@ public class PickupItem : MonoBehaviour
     [HideInInspector]
     public bool playerInside = false;
 
+    private PickupSystem activePickupSystem;
+
     public string ItemId => ResolveName(itemId);
     public string DisplayName => ResolveName(displayName);
     public string PickupPrompt => string.IsNullOrWhiteSpace(pickupPrompt)
         ? $"Presiona E para recoger {DisplayName}"
         : pickupPrompt;
+    public bool IsFuelPickup => DisplayName.StartsWith("Fuel Tank");
 
     private void OnTriggerEnter(Collider other)
     {
@@ -28,9 +31,10 @@ public class PickupItem : MonoBehaviour
 
         playerInside = true;
 
-        PickupSystem pickupSystem = other.GetComponentInParent<PickupSystem>();
+        PickupSystem pickupSystem = ResolvePickupSystem(other);
         if (pickupSystem != null)
         {
+            activePickupSystem = pickupSystem;
             pickupSystem.SetCurrentItem(this);
         }
     }
@@ -44,11 +48,48 @@ public class PickupItem : MonoBehaviour
 
         playerInside = false;
 
-        PickupSystem pickupSystem = other.GetComponentInParent<PickupSystem>();
+        PickupSystem pickupSystem = ResolvePickupSystem(other);
         if (pickupSystem != null)
         {
             pickupSystem.ClearCurrentItem(this);
         }
+
+        if (activePickupSystem == pickupSystem)
+        {
+            activePickupSystem = null;
+        }
+    }
+
+    private void Update()
+    {
+        if (!playerInside)
+        {
+            return;
+        }
+
+        activePickupSystem ??= PickupSystem.EnsureInstance();
+        if (activePickupSystem == null)
+        {
+            return;
+        }
+
+        activePickupSystem.SetCurrentItem(this);
+
+        if (Input.GetKeyDown(activePickupSystem.pickupKey))
+        {
+            activePickupSystem.TryPickup(this);
+        }
+    }
+
+    private PickupSystem ResolvePickupSystem(Collider other)
+    {
+        PickupSystem pickupSystem = other.GetComponentInParent<PickupSystem>();
+        if (pickupSystem != null)
+        {
+            return pickupSystem;
+        }
+
+        return PickupSystem.EnsureInstance();
     }
 
     private string ResolveName(string configuredValue)

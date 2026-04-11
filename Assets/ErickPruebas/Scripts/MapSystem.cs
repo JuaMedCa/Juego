@@ -14,6 +14,7 @@ public class MapSystem : MonoBehaviour
 
     void Update()
     {
+        ObjectiveSystem.EnsureInstance();
         DetectMap();
 
         // Recoger mapa
@@ -57,6 +58,7 @@ public class MapSystem : MonoBehaviour
     void PickupMap()
     {
         hasMap = true;
+        ObjectiveSystem.Instance.RegisterMapPickup();
 
         Destroy(currentMap.gameObject);
 

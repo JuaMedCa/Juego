@@ -10,6 +10,8 @@ public class FuelSequenceManager : MonoBehaviour
 
     void Start()
     {
+        ObjectiveSystem.EnsureInstance();
+
         foreach (GameObject icon in fuelIcons)
         {
             icon.SetActive(false);
