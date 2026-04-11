@@ -4,6 +4,27 @@ using UnityEngine;
 
 public class PickupSystem : MonoBehaviour
 {
+    public static PickupSystem Instance { get; private set; }
+
+    public static PickupSystem EnsureInstance()
+    {
+        if (Instance != null)
+        {
+            return Instance;
+        }
+
+        PickupSystem existing = FindObjectOfType<PickupSystem>();
+        if (existing != null)
+        {
+            Instance = existing;
+            return existing;
+        }
+
+        GameObject managerObject = new GameObject("PickupManager");
+        Instance = managerObject.AddComponent<PickupSystem>();
+        return Instance;
+    }
+
     [Header("UI")]
     public GameObject interactText;
     [SerializeField] private TMP_Text interactLabel;
@@ -18,7 +39,14 @@ public class PickupSystem : MonoBehaviour
 
     private void Awake()
     {
+        Instance = this;
         InventoryManager.EnsureInstance();
+        ObjectiveSystem.EnsureInstance();
+
+        if (interactText == null)
+        {
+            interactText = FindInteractTextObject();
+        }
 
         if (interactLabel == null && interactText != null)
         {
@@ -26,6 +54,28 @@ public class PickupSystem : MonoBehaviour
         }
 
         HideInteractText();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
+    }
+
+    private GameObject FindInteractTextObject()
+    {
+        TMP_Text[] textObjects = FindObjectsOfType<TMP_Text>(true);
+        for (int i = 0; i < textObjects.Length; i++)
+        {
+            if (textObjects[i].name == "InteractText")
+            {
+                return textObjects[i].gameObject;
+            }
+        }
+
+        return null;
     }
 
     private void Update()
@@ -83,6 +133,16 @@ public class PickupSystem : MonoBehaviour
         }
     }
 
+    public void TryPickup(PickupItem item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        Pickup(item);
+    }
+
     private void Pickup(PickupItem item)
     {
         if (item == null)
@@ -95,6 +155,11 @@ public class PickupSystem : MonoBehaviour
         if (item.fuelManager != null)
         {
             item.fuelManager.OnFuelCollected();
+        }
+
+        if (item.IsFuelPickup)
+        {
+            ObjectiveSystem.Instance.RegisterFuelPickup(item.ItemId);
         }
 
         if (useMessageSystem && MessageSystem.instance != null)

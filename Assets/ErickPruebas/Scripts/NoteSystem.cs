@@ -54,6 +54,7 @@ public class NoteSystem : MonoBehaviour
     {
         isReading = true;
         note.MarkAsCollected();
+        ObjectiveSystem.EnsureInstance().RegisterNoteRead(note.NoteId);
 
         notePanel.SetActive(true);
         noteText.text = BuildNoteContent(note);
