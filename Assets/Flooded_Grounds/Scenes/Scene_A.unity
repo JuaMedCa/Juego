@@ -247742,6 +247742,9 @@ MonoBehaviour:
   displayName: 
   autoRegisterOnAwake: 1
   bookChildName: Book04
+  noteVideoPath: Videos/Cinematica1.mp4
+  closingVideoEndMessage: huye algo se acerca
+  closingVideoEndMessageDuration: 4
   noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
   playerInside: 0
 --- !u!65 &1810429627
