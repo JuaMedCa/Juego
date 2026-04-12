@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -6,6 +6,17 @@ public class PlayerMovemnt : MonoBehaviour
 {
     [Header("Movement")]
     public float speed = 4f;
+    [SerializeField] private float runMultiplier = 1.65f;
+    [SerializeField] private KeyCode runKey = KeyCode.LeftShift;
+
+    [Header("Crouch")]
+    [SerializeField] private float crouchSpeedMultiplier = 0.55f;
+    [SerializeField] private float crouchHeight = 1.15f;
+    [SerializeField] private float crouchTransitionSpeed = 8f;
+    [SerializeField] private float crouchCameraOffset = 0.45f;
+    [SerializeField] private KeyCode crouchKey = KeyCode.C;
+    [SerializeField] private KeyCode alternateCrouchKey = KeyCode.LeftControl;
+    [SerializeField] private Transform crouchViewTarget;
 
     [Header("Isometric Rotation")]
     public float rotationSpeed = 10f;
@@ -17,7 +28,7 @@ public class PlayerMovemnt : MonoBehaviour
     [Header("Mode")]
     public bool isFPS = false;
 
-    [Tooltip("Asigna aquí el Transform de la Main Camera.")]
+    [Tooltip("Asigna aqui el Transform de la Main Camera.")]
     public Transform fpsCamera;
 
     [Header("Hide Body In FPS")]
@@ -30,6 +41,8 @@ public class PlayerMovemnt : MonoBehaviour
 
     private Animator animator;
     private Rigidbody rb;
+    private CapsuleCollider capsuleCollider;
+    private Transform resolvedCrouchViewTarget;
 
     private Vector3 forward;
     private Vector3 right;
@@ -40,15 +53,29 @@ public class PlayerMovemnt : MonoBehaviour
 
     private Quaternion desiredRotation;
     private bool hasDesiredRotation = false;
+    private bool isRunning = false;
+    private bool isCrouching = false;
+    private float standingColliderHeight;
+    private Vector3 standingColliderCenter;
+    private float standingColliderBottom;
+    private Vector3 standingViewTargetLocalPosition;
+
+    public bool IsRunning => isRunning;
+    public bool IsCrouching => isCrouching;
+    public float CurrentMoveSpeed => speed * GetMovementSpeedMultiplier();
 
     void Start()
     {
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody>();
+        capsuleCollider = GetComponent<CapsuleCollider>();
 
         ResolveFpsCamera();
+        ResolveCrouchViewTarget();
+        CacheStandingGeometry();
         RecalculateIsoDirections();
         SetBodyVisible(true);
+        ApplyCrouchStateImmediate();
     }
 
     void Update()
@@ -56,6 +83,7 @@ public class PlayerMovemnt : MonoBehaviour
         if (isTransitioning)
         {
             inputDirection = Vector3.zero;
+            isRunning = false;
 
             if (animator != null)
             {
@@ -63,8 +91,11 @@ public class PlayerMovemnt : MonoBehaviour
                 animator.SetFloat("VelY", 0f);
             }
 
+            UpdateCrouchState(Time.deltaTime);
             return;
         }
+
+        HandleCrouchInput();
 
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
@@ -74,6 +105,7 @@ public class PlayerMovemnt : MonoBehaviour
             : GetIsometricMoveDirection(h, v);
 
         inputDirection = Vector3.ClampMagnitude(direction, 1f);
+        isRunning = ShouldRun(h, v);
 
         if (animator != null)
         {
@@ -91,6 +123,8 @@ public class PlayerMovemnt : MonoBehaviour
 
             hasDesiredRotation = true;
         }
+
+        UpdateCrouchState(Time.deltaTime);
     }
 
     void FixedUpdate()
@@ -99,7 +133,7 @@ public class PlayerMovemnt : MonoBehaviour
 
         if (inputDirection.sqrMagnitude >= 0.01f)
         {
-            Vector3 newPosition = rb.position + inputDirection * speed * Time.fixedDeltaTime;
+            Vector3 newPosition = rb.position + inputDirection * CurrentMoveSpeed * Time.fixedDeltaTime;
             rb.MovePosition(newPosition);
         }
 
@@ -128,10 +162,9 @@ public class PlayerMovemnt : MonoBehaviour
 
     private IEnumerator EnterFPSRoutine()
     {
-        Debug.Log("Inicio transición FPS: " + Time.time);
-
         isTransitioning = true;
         inputDirection = Vector3.zero;
+        isRunning = false;
 
         if (animator != null)
         {
@@ -141,13 +174,12 @@ public class PlayerMovemnt : MonoBehaviour
 
         SetBodyVisible(true);
 
-        yield return new WaitForSeconds(2.0f);
-
-        Debug.Log("Ahora sí oculto cuerpo: " + Time.time);
+        yield return new WaitForSeconds(enterFPSTransitionDuration);
 
         isFPS = true;
         ResolveFpsCamera();
         SetBodyVisible(false);
+        ApplyCrouchStateImmediate();
 
         isTransitioning = false;
         transitionCoroutine = null;
@@ -157,6 +189,7 @@ public class PlayerMovemnt : MonoBehaviour
     {
         isTransitioning = true;
         inputDirection = Vector3.zero;
+        isRunning = false;
 
         if (animator != null)
         {
@@ -164,12 +197,10 @@ public class PlayerMovemnt : MonoBehaviour
             animator.SetFloat("VelY", 0f);
         }
 
-        // Aquí aparece el cuerpo desde el inicio para que se vea en la transición
         SetBodyVisible(true);
 
         yield return new WaitForSeconds(exitFPSTransitionDuration);
 
-        // Al terminar, vuelve oficialmente a isométrico
         isFPS = false;
 
         Vector3 euler = rb.rotation.eulerAngles;
@@ -177,6 +208,7 @@ public class PlayerMovemnt : MonoBehaviour
         rb.MoveRotation(flatRotation);
 
         RecalculateIsoDirections();
+        ApplyCrouchStateImmediate();
 
         isTransitioning = false;
         transitionCoroutine = null;
@@ -286,13 +318,221 @@ public class PlayerMovemnt : MonoBehaviour
     private Transform ResolveFpsCamera()
     {
         if (fpsCamera != null && fpsCamera != transform)
-            return fpsCamera;
+        {
+            if (fpsCamera.GetComponent<Camera>() != null)
+                return fpsCamera;
+
+            Camera fallbackCamera = Camera.main;
+            if (fallbackCamera == null)
+                return fpsCamera;
+        }
 
         Camera mainCamera = Camera.main;
         if (mainCamera != null)
         {
             fpsCamera = mainCamera.transform;
             return fpsCamera;
+        }
+
+        return fpsCamera != transform ? fpsCamera : null;
+    }
+
+    private void HandleCrouchInput()
+    {
+        bool crouchPressed = Input.GetKeyDown(crouchKey) || Input.GetKeyDown(alternateCrouchKey);
+        if (!crouchPressed)
+        {
+            return;
+        }
+
+        if (isCrouching)
+        {
+            TryStandUp();
+            return;
+        }
+
+        isCrouching = true;
+        isRunning = false;
+    }
+
+    private bool ShouldRun(float h, float v)
+    {
+        if (isCrouching || !Input.GetKey(runKey))
+        {
+            return false;
+        }
+
+        return new Vector2(h, v).sqrMagnitude > 0.01f;
+    }
+
+    private float GetMovementSpeedMultiplier()
+    {
+        if (isCrouching)
+        {
+            return Mathf.Max(0.1f, crouchSpeedMultiplier);
+        }
+
+        if (isRunning)
+        {
+            return Mathf.Max(1f, runMultiplier);
+        }
+
+        return 1f;
+    }
+
+    private void ResolveCrouchViewTarget()
+    {
+        if (crouchViewTarget != null)
+        {
+            resolvedCrouchViewTarget = crouchViewTarget;
+            return;
+        }
+
+        resolvedCrouchViewTarget = FindDescendantByName(transform, "FPSCameraTarget");
+        if (resolvedCrouchViewTarget != null)
+        {
+            crouchViewTarget = resolvedCrouchViewTarget;
+            return;
+        }
+
+        if (fpsCamera != null && fpsCamera != transform && fpsCamera.IsChildOf(transform))
+        {
+            resolvedCrouchViewTarget = fpsCamera;
+            crouchViewTarget = fpsCamera;
+        }
+    }
+
+    private void CacheStandingGeometry()
+    {
+        if (capsuleCollider != null)
+        {
+            standingColliderHeight = capsuleCollider.height;
+            standingColliderCenter = capsuleCollider.center;
+            standingColliderBottom = standingColliderCenter.y - (standingColliderHeight * 0.5f);
+        }
+
+        if (resolvedCrouchViewTarget != null)
+        {
+            standingViewTargetLocalPosition = resolvedCrouchViewTarget.localPosition;
+        }
+    }
+
+    private void UpdateCrouchState(float deltaTime)
+    {
+        if (capsuleCollider != null)
+        {
+            float minimumHeight = Mathf.Max(capsuleCollider.radius * 2f, 0.2f);
+            float targetHeight = isCrouching
+                ? Mathf.Clamp(crouchHeight, minimumHeight, standingColliderHeight)
+                : standingColliderHeight;
+
+            float nextHeight = Mathf.MoveTowards(capsuleCollider.height, targetHeight, crouchTransitionSpeed * deltaTime);
+            capsuleCollider.height = nextHeight;
+            capsuleCollider.center = new Vector3(
+                standingColliderCenter.x,
+                standingColliderBottom + (nextHeight * 0.5f),
+                standingColliderCenter.z);
+        }
+
+        if (resolvedCrouchViewTarget != null)
+        {
+            Vector3 crouchedViewPosition = standingViewTargetLocalPosition + Vector3.down * Mathf.Max(0f, crouchCameraOffset);
+            Vector3 targetPosition = isCrouching ? crouchedViewPosition : standingViewTargetLocalPosition;
+            resolvedCrouchViewTarget.localPosition = Vector3.MoveTowards(
+                resolvedCrouchViewTarget.localPosition,
+                targetPosition,
+                Mathf.Max(0.01f, crouchTransitionSpeed * deltaTime));
+        }
+    }
+
+    private void ApplyCrouchStateImmediate()
+    {
+        if (capsuleCollider != null)
+        {
+            float minimumHeight = Mathf.Max(capsuleCollider.radius * 2f, 0.2f);
+            float targetHeight = isCrouching
+                ? Mathf.Clamp(crouchHeight, minimumHeight, standingColliderHeight)
+                : standingColliderHeight;
+
+            capsuleCollider.height = targetHeight;
+            capsuleCollider.center = new Vector3(
+                standingColliderCenter.x,
+                standingColliderBottom + (targetHeight * 0.5f),
+                standingColliderCenter.z);
+        }
+
+        if (resolvedCrouchViewTarget != null)
+        {
+            Vector3 crouchedViewPosition = standingViewTargetLocalPosition + Vector3.down * Mathf.Max(0f, crouchCameraOffset);
+            resolvedCrouchViewTarget.localPosition = isCrouching ? crouchedViewPosition : standingViewTargetLocalPosition;
+        }
+    }
+
+    private void TryStandUp()
+    {
+        if (!CanStandUp())
+        {
+            return;
+        }
+
+        isCrouching = false;
+    }
+
+    private bool CanStandUp()
+    {
+        if (capsuleCollider == null)
+        {
+            return true;
+        }
+
+        float radiusScale = Mathf.Max(
+            Mathf.Abs(transform.lossyScale.x),
+            Mathf.Abs(transform.lossyScale.z));
+        float heightScale = Mathf.Abs(transform.lossyScale.y);
+        float worldRadius = Mathf.Max(0.01f, (capsuleCollider.radius * radiusScale) - 0.02f);
+        float worldHeight = standingColliderHeight * heightScale;
+        float halfDistance = Mathf.Max(0f, (worldHeight * 0.5f) - worldRadius);
+        Vector3 targetCenter = new Vector3(
+            standingColliderCenter.x,
+            standingColliderBottom + (standingColliderHeight * 0.5f),
+            standingColliderCenter.z);
+        Vector3 worldCenter = transform.TransformPoint(targetCenter);
+        Vector3 pointTop = worldCenter + (transform.up * halfDistance);
+        Vector3 pointBottom = worldCenter - (transform.up * halfDistance);
+
+        bool previousState = capsuleCollider.enabled;
+        capsuleCollider.enabled = false;
+        bool blocked = Physics.CheckCapsule(
+            pointTop,
+            pointBottom,
+            worldRadius,
+            Physics.AllLayers,
+            QueryTriggerInteraction.Ignore);
+        capsuleCollider.enabled = previousState;
+
+        return !blocked;
+    }
+
+    private static Transform FindDescendantByName(Transform root, string targetName)
+    {
+        if (root == null || string.IsNullOrWhiteSpace(targetName))
+        {
+            return null;
+        }
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child.name == targetName)
+            {
+                return child;
+            }
+
+            Transform nestedMatch = FindDescendantByName(child, targetName);
+            if (nestedMatch != null)
+            {
+                return nestedMatch;
+            }
         }
 
         return null;
