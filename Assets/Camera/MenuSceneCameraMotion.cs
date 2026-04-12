@@ -32,9 +32,9 @@ public class MenuSceneCameraMotion : MonoBehaviour
         if (enableDrift)
         {
             Vector3 driftOffset = new Vector3(
-                Mathf.Sin(Time.unscaledTime * driftSpeed.x) * driftAmplitude.x,
-                Mathf.Cos(Time.unscaledTime * driftSpeed.y) * driftAmplitude.y,
-                Mathf.Sin(Time.unscaledTime * driftSpeed.z) * driftAmplitude.z);
+                Mathf.Sin(Time.time * driftSpeed.x) * driftAmplitude.x,
+                Mathf.Cos(Time.time * driftSpeed.y) * driftAmplitude.y,
+                Mathf.Sin(Time.time * driftSpeed.z) * driftAmplitude.z);
 
             transform.localPosition = baseLocalPosition + driftOffset;
         }

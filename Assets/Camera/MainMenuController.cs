@@ -156,7 +156,7 @@ public class MainMenuController : MonoBehaviour
 
     void OnDestroy()
     {
-        Time.timeScale = 1f;
+        SetGamePaused(false);
         SetMenuMusicPlaying(false);
     }
 
@@ -193,7 +193,7 @@ public class MainMenuController : MonoBehaviour
 
     void OpenMenu()
     {
-        Time.timeScale = 0f;
+        SetGamePaused(true);
         SetGameplayEnabled(false);
         menuRoot.SetActive(true);
         optionsPanel.SetActive(false);
@@ -211,7 +211,7 @@ public class MainMenuController : MonoBehaviour
 
     void CloseMenu()
     {
-        Time.timeScale = 1f;
+        SetGamePaused(false);
         SetGameplayEnabled(true);
         menuRoot.SetActive(false);
         optionsPanel.SetActive(false);
@@ -239,13 +239,19 @@ public class MainMenuController : MonoBehaviour
 
     void StartNewGame()
     {
-        Time.timeScale = 1f;
+        SetGamePaused(false);
         SetMenuMusicPlaying(false);
         Scene activeScene = SceneManager.GetActiveScene();
         if (!string.IsNullOrEmpty(activeScene.name))
         {
             SceneManager.LoadScene(activeScene.name);
         }
+    }
+
+    void SetGamePaused(bool paused)
+    {
+        Time.timeScale = paused ? 0f : 1f;
+        AudioListener.pause = paused;
     }
 
     void ToggleOptions() { optionsPanel.SetActive(!optionsPanel.activeSelf); extrasPanel.SetActive(false); RefreshOptionLabels(); }
