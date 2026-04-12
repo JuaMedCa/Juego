@@ -141,6 +141,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameTitle: DARK FALL
+  gameSubtitle: NO DEBERIAS ESTAR AQUI
+  logoSprite: {fileID: 21300000, guid: 51ecc92d8669e8d4aa6c87afa66088e2, type: 3}
+  backgroundSprite: {fileID: 21300000, guid: 4e945c3956a836249af9014362bc444b, type: 3}
+  useSceneBackgroundCamera: 1
+  panelColor: {r: 0.03, g: 0.04, b: 0.05, a: 0.8}
+  accentColor: {r: 0.62, g: 0.05, b: 0.07, a: 0.98}
+  accentSoftColor: {r: 0.62, g: 0.05, b: 0.07, a: 0.24}
+  buttonColor: {r: 1, g: 1, b: 1, a: 0.05}
+  buttonHoverColor: {r: 0.7, g: 0.08, b: 0.1, a: 0.65}
+  titleColor: {r: 0.94, g: 0.94, b: 0.92, a: 1}
+  textColor: {r: 0.78, g: 0.78, b: 0.76, a: 1}
+  faintTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  lineColor: {r: 1, g: 1, b: 1, a: 0.08}
+  menuMusicClip: {fileID: 8300000, guid: 5fbbab30a7a782e4dae171be12f24c87, type: 3}
+  menuMusicVolume: 0.18
+  applySceneAtmosphere: 1
+  outdoorFogColor: {r: 0.06, g: 0.08, b: 0.09, a: 1}
+  outdoorFogDensity: 0.02
+  bounceLightIntensityMultiplier: 0.55
+  bounceLightRangeMultiplier: 0.8
+  rogueLightBounds: {x: 2500, y: 500, z: 2500}
   logoSprite: {fileID: 21300000, guid: 51ecc92d8669e8d4aa6c87afa66088e2, type: 3}
   backgroundSprite: {fileID: 21300000, guid: 4e945c3956a836249af9014362bc444b, type: 3}
   backgroundTint: {r: 1, g: 1, b: 1, a: 0.9}
