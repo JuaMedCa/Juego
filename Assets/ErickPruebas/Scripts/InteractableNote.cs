@@ -1,5 +1,7 @@
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 
 public class InteractableNote : MonoBehaviour
 {
@@ -8,6 +10,12 @@ public class InteractableNote : MonoBehaviour
     [SerializeField] private string displayName;
     [SerializeField] private bool autoRegisterOnAwake = true;
     [SerializeField] private string bookChildName = "Book04";
+
+    [Header("Cinematica")]
+    [FormerlySerializedAs("pickupVideoPath")]
+    [SerializeField] private string noteVideoPath;
+    [SerializeField] private string closingVideoEndMessage;
+    [SerializeField] private float closingVideoEndMessageDuration = 4f;
 
     public NoteData noteData;
 
@@ -18,6 +26,10 @@ public class InteractableNote : MonoBehaviour
     public string DisplayName => ResolveDisplayName();
     public string PreviewText => ResolvePreviewText();
     public string FullText => ResolveFullText();
+    public bool HasClosingVideo => !string.IsNullOrWhiteSpace(noteVideoPath);
+    public bool HasClosingVideoEndMessage => !string.IsNullOrWhiteSpace(closingVideoEndMessage);
+    public string ClosingVideoEndMessage => string.IsNullOrWhiteSpace(closingVideoEndMessage) ? string.Empty : closingVideoEndMessage.Trim();
+    public float ClosingVideoEndMessageDuration => Mathf.Max(0.5f, closingVideoEndMessageDuration);
 
     private void Awake()
     {
@@ -25,6 +37,22 @@ public class InteractableNote : MonoBehaviour
         {
             RegisterInInventory();
         }
+    }
+
+    public string ResolveVideoPath()
+    {
+        if (string.IsNullOrWhiteSpace(noteVideoPath))
+        {
+            return string.Empty;
+        }
+
+        string rawPath = noteVideoPath.Trim();
+        if (Path.IsPathRooted(rawPath) || rawPath.Contains("://"))
+        {
+            return rawPath.Replace("\\", "/");
+        }
+
+        return Path.Combine(Application.streamingAssetsPath, rawPath).Replace("\\", "/");
     }
 
     public void RegisterInInventory()
