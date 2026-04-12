@@ -18,6 +18,8 @@ public class MainMenuController : MonoBehaviour
     const string FullscreenKey = "menu.fullscreen";
     const string VSyncKey = "menu.vsync";
     const string DefaultMenuMusicPath = "Assets/MaxStack/Abyss of Negative Existence/Audio/Music/ANE Oppressive Absolution.wav";
+    static readonly Color MenuCardColor = new Color(0.11f, 0.12f, 0.14f, 0.96f);
+    static readonly Color MenuCardShadowColor = new Color(0f, 0f, 0f, 0.55f);
 
     [Header("Branding")]
     [SerializeField] string gameTitle = "DARK FALL";
@@ -37,7 +39,6 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] Color faintTextColor = new Color(0.50f, 0.50f, 0.50f, 1f);
     [SerializeField] Color lineColor = new Color(1f, 1f, 1f, 0.08f);
     [SerializeField] Color pauseBackdropColor = new Color(0.01f, 0.01f, 0.02f, 0.42f);
-    [SerializeField] Color pauseFocusAreaColor = new Color(0.04f, 0.05f, 0.06f, 0.88f);
     [SerializeField] bool keepCurrentViewOnPause = true;
 
     [Header("Menu Audio")]
@@ -71,6 +72,11 @@ public class MainMenuController : MonoBehaviour
     Text whisperText;
     Text sceneLabelText;
     Text playButtonText;
+    GameObject playButton;
+    GameObject newGameButton;
+    GameObject optionsButton;
+    GameObject extrasButton;
+    GameObject quitButton;
     Text volumeValueText;
     Text sensitivityValueText;
     Text qualityValueText;
@@ -230,6 +236,18 @@ public class MainMenuController : MonoBehaviour
         RefreshMenuVisualState();
         CloseMenu();
     }
+
+    void StartNewGame()
+    {
+        Time.timeScale = 1f;
+        SetMenuMusicPlaying(false);
+        Scene activeScene = SceneManager.GetActiveScene();
+        if (!string.IsNullOrEmpty(activeScene.name))
+        {
+            SceneManager.LoadScene(activeScene.name);
+        }
+    }
+
     void ToggleOptions() { optionsPanel.SetActive(!optionsPanel.activeSelf); extrasPanel.SetActive(false); RefreshOptionLabels(); }
     void ToggleExtras() { extrasPanel.SetActive(!extrasPanel.activeSelf); optionsPanel.SetActive(false); }
     void ChangeVolume(float delta) { masterVolume = Mathf.Clamp01(masterVolume + delta); AudioListener.volume = masterVolume; SaveSettings(); RefreshOptionLabels(); }
@@ -323,11 +341,11 @@ public class MainMenuController : MonoBehaviour
         centerRect.pivot = new Vector2(0.5f, 0.5f);
         centerRect.sizeDelta = new Vector2(760f, 720f);
         centerRect.anchoredPosition = new Vector2(0f, 12f);
-        pauseFocusArea = CreatePanel("PauseFocusArea", center.transform, pauseFocusAreaColor);
+        pauseFocusArea = CreatePanel("PauseFocusArea", center.transform, MenuCardColor);
         RectTransform pauseFocusRect = pauseFocusArea.GetComponent<RectTransform>();
         pauseFocusRect.SetAnchored(new Vector2(0f, -286f), new Vector2(420f, 300f));
-        AddOutline(pauseFocusArea, new Color(1f, 1f, 1f, 0.10f), new Vector2(1f, -1f));
-        AddShadow(pauseFocusArea, new Color(0f, 0f, 0f, 0.42f), new Vector2(0f, -10f));
+        AddOutline(pauseFocusArea, lineColor, new Vector2(1f, -1f));
+        AddShadow(pauseFocusArea, MenuCardShadowColor, new Vector2(0f, -8f));
         pauseFocusArea.SetActive(false);
         if (logoSprite != null)
         {
@@ -340,10 +358,11 @@ public class MainMenuController : MonoBehaviour
         titleBasePos = titleRect.anchoredPosition;
         CreateText("Subtitle", center.transform, gameSubtitle, 18, FontStyle.Italic, accentColor, TextAnchor.MiddleCenter, new Vector2(0f, -244f), new Vector2(540f, 28f), false);
         CreatePanel("Separator", center.transform, new Color(1f, 1f, 1f, 0.14f)).GetComponent<RectTransform>().SetAnchored(new Vector2(0f, -286f), new Vector2(220f, 1.5f));
-        CreateMenuButton(center.transform, "JUGAR", new Vector2(0f, -346f), 28, StartGame, true, out playButtonText);
-        CreateMenuButton(center.transform, "OPCIONES", new Vector2(0f, -404f), 20, ToggleOptions, false);
-        CreateMenuButton(center.transform, "EXTRAS", new Vector2(0f, -454f), 20, ToggleExtras, false);
-        CreateMenuButton(center.transform, "SALIR", new Vector2(0f, -504f), 20, QuitGame, false);
+        playButton = CreateMenuButton(center.transform, "JUGAR", new Vector2(0f, -346f), 28, StartGame, true, out playButtonText);
+        newGameButton = CreateMenuButton(center.transform, "NUEVA PARTIDA", new Vector2(0f, -396f), 18, StartNewGame, false);
+        optionsButton = CreateMenuButton(center.transform, "OPCIONES", new Vector2(0f, -446f), 20, ToggleOptions, false);
+        extrasButton = CreateMenuButton(center.transform, "EXTRAS", new Vector2(0f, -496f), 20, ToggleExtras, false);
+        quitButton = CreateMenuButton(center.transform, "SALIR", new Vector2(0f, -546f), 20, QuitGame, false);
 
         whisperText = CreateText("Whisper", canvasObject.transform, "...", 20, FontStyle.Italic, faintTextColor, TextAnchor.MiddleCenter, new Vector2(0f, -990f), new Vector2(900f, 40f), false);
         sceneLabelText = CreateText("SceneLabel", canvasObject.transform, "", 14, FontStyle.Normal, faintTextColor, TextAnchor.MiddleRight, new Vector2(-40f, -40f), new Vector2(420f, 24f), false);
@@ -475,13 +494,13 @@ public class MainMenuController : MonoBehaviour
 
     GameObject CreateCard(Transform parent, string name, Vector2 anchor, Vector2 size)
     {
-        GameObject card = CreatePanel(name, parent, new Color(0.11f, 0.12f, 0.14f, 0.96f));
+        GameObject card = CreatePanel(name, parent, MenuCardColor);
         RectTransform rect = card.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = anchor;
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.sizeDelta = size;
         AddOutline(card, lineColor, new Vector2(1f, -1f));
-        AddShadow(card, new Color(0f, 0f, 0f, 0.55f), new Vector2(0f, -8f));
+        AddShadow(card, MenuCardShadowColor, new Vector2(0f, -8f));
         return card;
     }
 
@@ -601,9 +620,65 @@ public class MainMenuController : MonoBehaviour
             pauseFocusArea.SetActive(isPauseMenu);
         }
 
+        if (newGameButton != null)
+        {
+            newGameButton.SetActive(isPauseMenu);
+        }
+
         if (whisperText != null)
         {
             whisperText.gameObject.SetActive(!isPauseMenu);
+        }
+
+        RefreshMenuButtonLayout(isPauseMenu);
+    }
+
+    void RefreshMenuButtonLayout(bool isPauseMenu)
+    {
+        SetMenuButtonPosition(playButton, new Vector2(0f, -346f));
+
+        if (isPauseMenu)
+        {
+            SetMenuButtonPosition(newGameButton, new Vector2(0f, -396f));
+            SetMenuButtonPosition(optionsButton, new Vector2(0f, -446f));
+            SetMenuButtonPosition(extrasButton, new Vector2(0f, -496f));
+            SetMenuButtonPosition(quitButton, new Vector2(0f, -546f));
+            SetPanelSize(pauseFocusArea, new Vector2(420f, 352f));
+        }
+        else
+        {
+            SetMenuButtonPosition(optionsButton, new Vector2(0f, -404f));
+            SetMenuButtonPosition(extrasButton, new Vector2(0f, -454f));
+            SetMenuButtonPosition(quitButton, new Vector2(0f, -504f));
+            SetPanelSize(pauseFocusArea, new Vector2(420f, 300f));
+        }
+    }
+
+    void SetMenuButtonPosition(GameObject button, Vector2 position)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        RectTransform rect = button.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.anchoredPosition = position;
+        }
+    }
+
+    void SetPanelSize(GameObject panel, Vector2 size)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        RectTransform rect = panel.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.sizeDelta = size;
         }
     }
 
