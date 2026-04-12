@@ -361,7 +361,7 @@ public class NoteSystem : MonoBehaviour
             return;
         }
 
-        MessageSystem.instance.ShowMessage(note.ClosingVideoEndMessage, note.ClosingVideoEndMessageDuration);
+        MessageSystem.instance.ShowTypewriterMessage(note.ClosingVideoEndMessage, note.ClosingVideoEndMessageDuration);
     }
 
     private string BuildNoteContent(InteractableNote note)
