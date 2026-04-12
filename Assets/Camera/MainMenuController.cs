@@ -2,6 +2,7 @@ using System.Collections;
 using Cinemachine;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 #if UNITY_EDITOR
@@ -16,6 +17,9 @@ public class MainMenuController : MonoBehaviour
     const string QualityKey = "menu.quality";
     const string FullscreenKey = "menu.fullscreen";
     const string VSyncKey = "menu.vsync";
+    const string DefaultMenuMusicPath = "Assets/MaxStack/Abyss of Negative Existence/Audio/Music/ANE Oppressive Absolution.wav";
+    static readonly Color MenuCardColor = new Color(0.11f, 0.12f, 0.14f, 0.96f);
+    static readonly Color MenuCardShadowColor = new Color(0f, 0f, 0f, 0.55f);
 
     [Header("Branding")]
     [SerializeField] string gameTitle = "DARK FALL";
@@ -26,14 +30,28 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] Sprite backgroundSprite;
     [SerializeField] bool useSceneBackgroundCamera = true;
     [SerializeField] Color panelColor = new Color(0.03f, 0.04f, 0.05f, 0.80f);
-    [SerializeField] Color accentColor = new Color(0.76f, 0.18f, 0.18f, 0.92f);
-    [SerializeField] Color accentSoftColor = new Color(0.76f, 0.18f, 0.18f, 0.18f);
+    [SerializeField] Color accentColor = new Color(0.62f, 0.05f, 0.07f, 0.98f);
+    [SerializeField] Color accentSoftColor = new Color(0.62f, 0.05f, 0.07f, 0.24f);
     [SerializeField] Color buttonColor = new Color(1f, 1f, 1f, 0.05f);
-    [SerializeField] Color buttonHoverColor = new Color(0.76f, 0.18f, 0.18f, 0.20f);
+    [SerializeField] Color buttonHoverColor = new Color(0.70f, 0.08f, 0.10f, 0.65f);
     [SerializeField] Color titleColor = new Color(0.94f, 0.94f, 0.92f, 1f);
     [SerializeField] Color textColor = new Color(0.78f, 0.78f, 0.76f, 1f);
     [SerializeField] Color faintTextColor = new Color(0.50f, 0.50f, 0.50f, 1f);
     [SerializeField] Color lineColor = new Color(1f, 1f, 1f, 0.08f);
+    [SerializeField] Color pauseBackdropColor = new Color(0.01f, 0.01f, 0.02f, 0.42f);
+    [SerializeField] bool keepCurrentViewOnPause = true;
+
+    [Header("Menu Audio")]
+    [SerializeField] AudioClip menuMusicClip;
+    [SerializeField, Range(0f, 1f)] float menuMusicVolume = 0.18f;
+
+    [Header("Atmosphere")]
+    [SerializeField] bool applySceneAtmosphere = true;
+    [SerializeField] Color outdoorFogColor = new Color(0.06f, 0.08f, 0.09f, 1f);
+    [SerializeField, Range(0f, 0.1f)] float outdoorFogDensity = 0.02f;
+    [SerializeField, Range(0f, 1f)] float bounceLightIntensityMultiplier = 0.55f;
+    [SerializeField, Range(0.5f, 1f)] float bounceLightRangeMultiplier = 0.8f;
+    [SerializeField] Vector3 rogueLightBounds = new Vector3(2500f, 500f, 2500f);
 
     [Header("Defaults")]
     [SerializeField] float defaultMasterVolume = 0.8f;
@@ -46,12 +64,19 @@ public class MainMenuController : MonoBehaviour
     GameObject menuRoot;
     GameObject optionsPanel;
     GameObject extrasPanel;
+    GameObject pauseBackdrop;
+    GameObject pauseFocusArea;
     RectTransform backgroundRect;
     RectTransform titleRect;
     Vector2 titleBasePos;
     Text whisperText;
     Text sceneLabelText;
     Text playButtonText;
+    GameObject playButton;
+    GameObject newGameButton;
+    GameObject optionsButton;
+    GameObject extrasButton;
+    GameObject quitButton;
     Text volumeValueText;
     Text sensitivityValueText;
     Text qualityValueText;
@@ -61,6 +86,9 @@ public class MainMenuController : MonoBehaviour
     Text firstPersonModeButtonText;
     Image aerialModeButtonImage;
     Image firstPersonModeButtonImage;
+    Slider volumeSlider;
+    Slider sensitivitySlider;
+    AudioSource menuMusicSource;
     Camera gameplayCamera;
     AudioListener gameplayAudioListener;
     CinemachineBrain gameplayCinemachineBrain;
@@ -93,6 +121,8 @@ public class MainMenuController : MonoBehaviour
         gameplayCinemachineBrain = GetComponent<CinemachineBrain>();
         CacheGameplayHudRoots();
         EnsureMenuCameraRig();
+        EnsureMenuAudio();
+        TuneSceneAtmosphere();
         BuildMenu();
         LoadSettings();
         ApplyAllSettings();
@@ -103,13 +133,19 @@ public class MainMenuController : MonoBehaviour
 
     void Update()
     {
+        bool animateTitleScene = !hasStartedGame;
+
         if (backgroundRect != null)
         {
-            backgroundRect.localPosition = new Vector3(Mathf.Sin(Time.unscaledTime * 0.08f) * 10f, Mathf.Cos(Time.unscaledTime * 0.05f) * 6f, 0f);
+            backgroundRect.localPosition = animateTitleScene
+                ? new Vector3(Mathf.Sin(Time.unscaledTime * 0.08f) * 10f, Mathf.Cos(Time.unscaledTime * 0.05f) * 6f, 0f)
+                : Vector3.zero;
         }
         if (titleRect != null)
         {
-            titleRect.anchoredPosition = titleBasePos + new Vector2(0f, Mathf.Sin(Time.unscaledTime * 0.75f) * 4f);
+            titleRect.anchoredPosition = animateTitleScene
+                ? titleBasePos + new Vector2(0f, Mathf.Sin(Time.unscaledTime * 0.75f) * 4f)
+                : titleBasePos;
         }
 
         if (!hasStartedGame || !Input.GetKeyDown(KeyCode.Escape)) return;
@@ -120,7 +156,8 @@ public class MainMenuController : MonoBehaviour
 
     void OnDestroy()
     {
-        Time.timeScale = 1f;
+        SetGamePaused(false);
+        SetMenuMusicPlaying(false);
     }
 
     void LoadSettings()
@@ -156,7 +193,7 @@ public class MainMenuController : MonoBehaviour
 
     void OpenMenu()
     {
-        Time.timeScale = 0f;
+        SetGamePaused(true);
         SetGameplayEnabled(false);
         menuRoot.SetActive(true);
         optionsPanel.SetActive(false);
@@ -164,15 +201,17 @@ public class MainMenuController : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         CameraSwitchTrigger.SetMenuOpen(true);
+        RefreshMenuVisualState();
         SetMenuSceneCameraActive(true);
         SetHudVisible(false);
+        SetMenuMusicPlaying(true);
         RefreshPlayButtonLabel();
         if (sceneLabelText != null) sceneLabelText.text = "SENAL PERDIDA // " + SceneManager.GetActiveScene().name.ToUpperInvariant();
     }
 
     void CloseMenu()
     {
-        Time.timeScale = 1f;
+        SetGamePaused(false);
         SetGameplayEnabled(true);
         menuRoot.SetActive(false);
         optionsPanel.SetActive(false);
@@ -181,6 +220,7 @@ public class MainMenuController : MonoBehaviour
         SetMenuSceneCameraActive(false);
         CameraSwitchTrigger.RefreshGlobalCameraState();
         SetHudVisible(true);
+        SetMenuMusicPlaying(false);
     }
 
     void SetGameplayEnabled(bool enabled)
@@ -193,12 +233,33 @@ public class MainMenuController : MonoBehaviour
     {
         hasStartedGame = true;
         RefreshPlayButtonLabel();
+        RefreshMenuVisualState();
         CloseMenu();
     }
+
+    void StartNewGame()
+    {
+        SetGamePaused(false);
+        SetMenuMusicPlaying(false);
+        Scene activeScene = SceneManager.GetActiveScene();
+        if (!string.IsNullOrEmpty(activeScene.name))
+        {
+            SceneManager.LoadScene(activeScene.name);
+        }
+    }
+
+    void SetGamePaused(bool paused)
+    {
+        Time.timeScale = paused ? 0f : 1f;
+        AudioListener.pause = paused;
+    }
+
     void ToggleOptions() { optionsPanel.SetActive(!optionsPanel.activeSelf); extrasPanel.SetActive(false); RefreshOptionLabels(); }
     void ToggleExtras() { extrasPanel.SetActive(!extrasPanel.activeSelf); optionsPanel.SetActive(false); }
     void ChangeVolume(float delta) { masterVolume = Mathf.Clamp01(masterVolume + delta); AudioListener.volume = masterVolume; SaveSettings(); RefreshOptionLabels(); }
     void ChangeSensitivity(float delta) { cameraSensitivity = Mathf.Clamp(cameraSensitivity + delta, 1f, 20f); if (isoCameraOrbit != null) isoCameraOrbit.MouseSensitivity = cameraSensitivity; SaveSettings(); RefreshOptionLabels(); }
+    void SetVolume(float value) { masterVolume = Mathf.Clamp01(value); AudioListener.volume = masterVolume; SaveSettings(); RefreshOptionLabels(); }
+    void SetSensitivity(float value) { cameraSensitivity = Mathf.Clamp(value, 1f, 20f); if (isoCameraOrbit != null) isoCameraOrbit.MouseSensitivity = cameraSensitivity; SaveSettings(); RefreshOptionLabels(); }
     void CycleQuality() { qualityLevel = (qualityLevel + 1) % Mathf.Max(1, QualitySettings.names.Length); PerformanceBootstrap.ApplyQualityProfile(qualityLevel); SaveSettings(); RefreshOptionLabels(); }
     void ToggleFullscreen() { fullscreenEnabled = !fullscreenEnabled; Screen.fullScreen = fullscreenEnabled; SaveSettings(); RefreshOptionLabels(); }
     void ToggleVSync() { vSyncEnabled = !vSyncEnabled; QualitySettings.vSyncCount = vSyncEnabled ? 1 : 0; SaveSettings(); RefreshOptionLabels(); }
@@ -224,6 +285,8 @@ public class MainMenuController : MonoBehaviour
     {
         if (volumeValueText != null) volumeValueText.text = Mathf.RoundToInt(masterVolume * 100f) + "%";
         if (sensitivityValueText != null) sensitivityValueText.text = cameraSensitivity.ToString("0.0");
+        if (volumeSlider != null && !Mathf.Approximately(volumeSlider.value, masterVolume)) volumeSlider.SetValueWithoutNotify(masterVolume);
+        if (sensitivitySlider != null && !Mathf.Approximately(sensitivitySlider.value, cameraSensitivity)) sensitivitySlider.SetValueWithoutNotify(cameraSensitivity);
         if (qualityValueText != null) qualityValueText.text = QualitySettings.names.Length > 0 ? QualitySettings.names[qualityLevel].ToUpperInvariant() : "N/A";
         if (fullscreenValueText != null) fullscreenValueText.text = fullscreenEnabled ? "PANTALLA COMPLETA" : "VENTANA";
         if (vSyncValueText != null) vSyncValueText.text = vSyncEnabled ? "ACTIVADO" : "DESACTIVADO";
@@ -246,7 +309,7 @@ public class MainMenuController : MonoBehaviour
     void RefreshModeButton(Image image, Text label, bool selected)
     {
         if (image == null || label == null) return;
-        image.color = selected ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.24f) : buttonColor;
+        image.color = selected ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.72f) : new Color(0.22f, 0.24f, 0.28f, 0.74f);
         label.color = selected ? Color.white : titleColor;
     }
 
@@ -274,25 +337,22 @@ public class MainMenuController : MonoBehaviour
         backgroundRect = CreateFullImage("Background", canvasObject.transform, backgroundAsset, backgroundColor).rectTransform;
         CreateFullPanel("FogA", canvasObject.transform, new Color(0.02f, 0.03f, 0.04f, 0.50f));
         CreateFullPanel("FogB", canvasObject.transform, new Color(0.12f, 0.02f, 0.02f, 0.08f));
-        CreateNoise(canvasObject.transform);
-        CreateFullPanel("BottomFade", canvasObject.transform, new Color(0f, 0f, 0f, 0.38f)).rectTransform.anchorMax = new Vector2(1f, 0.24f);
+        pauseBackdrop = CreateFullPanel("PauseBackdrop", canvasObject.transform, pauseBackdropColor).gameObject;
+        pauseBackdrop.SetActive(false);
 
-        Color effectivePanelColor = useSceneBackgroundCamera
-            ? new Color(0.01f, 0.02f, 0.03f, 0.16f)
-            : panelColor;
+        Color effectivePanelColor = new Color(0f, 0f, 0f, 0f);
         GameObject center = CreatePanel("CenterPanel", canvasObject.transform, effectivePanelColor);
         RectTransform centerRect = center.GetComponent<RectTransform>();
         centerRect.anchorMin = centerRect.anchorMax = new Vector2(0.5f, 0.5f);
         centerRect.pivot = new Vector2(0.5f, 0.5f);
         centerRect.sizeDelta = new Vector2(760f, 720f);
         centerRect.anchoredPosition = new Vector2(0f, 12f);
-        if (!useSceneBackgroundCamera)
-        {
-            AddOutline(center, lineColor, new Vector2(1f, -1f));
-            AddShadow(center, new Color(0f, 0f, 0f, 0.55f), new Vector2(0f, -12f));
-            CreatePanel("TopStrip", center.transform, accentSoftColor).GetComponent<RectTransform>().SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 16f, 34f);
-        }
-
+        pauseFocusArea = CreatePanel("PauseFocusArea", center.transform, MenuCardColor);
+        RectTransform pauseFocusRect = pauseFocusArea.GetComponent<RectTransform>();
+        pauseFocusRect.SetAnchored(new Vector2(0f, -286f), new Vector2(420f, 300f));
+        AddOutline(pauseFocusArea, lineColor, new Vector2(1f, -1f));
+        AddShadow(pauseFocusArea, MenuCardShadowColor, new Vector2(0f, -8f));
+        pauseFocusArea.SetActive(false);
         if (logoSprite != null)
         {
             titleRect = CreateImage("Logo", center.transform, logoSprite, new Vector2(0f, -78f), new Vector2(180f, 180f)).rectTransform;
@@ -304,10 +364,11 @@ public class MainMenuController : MonoBehaviour
         titleBasePos = titleRect.anchoredPosition;
         CreateText("Subtitle", center.transform, gameSubtitle, 18, FontStyle.Italic, accentColor, TextAnchor.MiddleCenter, new Vector2(0f, -244f), new Vector2(540f, 28f), false);
         CreatePanel("Separator", center.transform, new Color(1f, 1f, 1f, 0.14f)).GetComponent<RectTransform>().SetAnchored(new Vector2(0f, -286f), new Vector2(220f, 1.5f));
-        CreateMenuButton(center.transform, "JUGAR", new Vector2(0f, -346f), 28, StartGame, true, out playButtonText);
-        CreateMenuButton(center.transform, "OPCIONES", new Vector2(0f, -404f), 20, ToggleOptions, false);
-        CreateMenuButton(center.transform, "EXTRAS", new Vector2(0f, -454f), 20, ToggleExtras, false);
-        CreateMenuButton(center.transform, "SALIR", new Vector2(0f, -504f), 20, QuitGame, false);
+        playButton = CreateMenuButton(center.transform, "JUGAR", new Vector2(0f, -346f), 28, StartGame, true, out playButtonText);
+        newGameButton = CreateMenuButton(center.transform, "NUEVA PARTIDA", new Vector2(0f, -396f), 18, StartNewGame, false);
+        optionsButton = CreateMenuButton(center.transform, "OPCIONES", new Vector2(0f, -446f), 20, ToggleOptions, false);
+        extrasButton = CreateMenuButton(center.transform, "EXTRAS", new Vector2(0f, -496f), 20, ToggleExtras, false);
+        quitButton = CreateMenuButton(center.transform, "SALIR", new Vector2(0f, -546f), 20, QuitGame, false);
 
         whisperText = CreateText("Whisper", canvasObject.transform, "...", 20, FontStyle.Italic, faintTextColor, TextAnchor.MiddleCenter, new Vector2(0f, -990f), new Vector2(900f, 40f), false);
         sceneLabelText = CreateText("SceneLabel", canvasObject.transform, "", 14, FontStyle.Normal, faintTextColor, TextAnchor.MiddleRight, new Vector2(-40f, -40f), new Vector2(420f, 24f), false);
@@ -320,14 +381,15 @@ public class MainMenuController : MonoBehaviour
         extrasPanel = CreateCard(canvasObject.transform, "ExtrasPanel", new Vector2(0.82f, 0.52f), new Vector2(500f, 340f));
         BuildExtras(extrasPanel.transform);
         extrasPanel.SetActive(false);
+        RefreshMenuVisualState();
     }
 
     void BuildOptions(Transform parent)
     {
         CreateText("OptionsTitle", parent, "AJUSTES", 30, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -24f), new Vector2(280f, 40f), false);
         CreatePanel("Sep", parent, lineColor).GetComponent<RectTransform>().SetAnchored(new Vector2(0f, -76f), new Vector2(420f, 2f));
-        volumeValueText = CreateStepperRow(parent, "VOLUMEN GENERAL", new Vector2(30f, -122f), () => ChangeVolume(-0.1f), () => ChangeVolume(0.1f));
-        sensitivityValueText = CreateStepperRow(parent, "SENSIBILIDAD", new Vector2(30f, -182f), () => ChangeSensitivity(-0.5f), () => ChangeSensitivity(0.5f));
+        volumeValueText = CreateSliderRow(parent, "VOLUMEN GENERAL", new Vector2(30f, -122f), 0f, 1f, value => SetVolume(value), out volumeSlider);
+        sensitivityValueText = CreateSliderRow(parent, "SENSIBILIDAD", new Vector2(30f, -182f), 1f, 20f, value => SetSensitivity(value), out sensitivitySlider);
         qualityValueText = CreateActionRow(parent, "GRAFICOS", new Vector2(30f, -242f), CycleQuality);
         fullscreenValueText = CreateActionRow(parent, "PANTALLA", new Vector2(30f, -302f), ToggleFullscreen);
         vSyncValueText = CreateActionRow(parent, "VSYNC", new Vector2(30f, -362f), ToggleVSync);
@@ -342,17 +404,16 @@ public class MainMenuController : MonoBehaviour
     {
         CreateText("ExtrasTitle", parent, "INFORMACION", 30, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, new Vector2(0f, -24f), new Vector2(320f, 40f), false);
         CreatePanel("Sep", parent, lineColor).GetComponent<RectTransform>().SetAnchored(new Vector2(0f, -72f), new Vector2(420f, 2f));
-        Text body = CreateTopLeftText("ExtrasBody", parent, "OBJETIVO\n\nEncuentra gasolina, consigue el mapa y reune documentos.\n\nCONTROLES\n\nWASD mover\nE interactuar\nM mapa\nTAB notas\nESC menu\n\nCONSEJO\n\nSi el silencio cambia, corre.", 18, FontStyle.Normal, textColor, TextAnchor.UpperLeft, new Vector2(28f, -100f), new Vector2(420f, 210f), false);
+        Text body = CreateTopLeftText("ExtrasBody", parent, "OBJETIVO\n\nEncuentra gasolina, consigue el mapa y reune documentos.\n\nCONTROLES\n\nWASD mover\nE interactuar\nM mapa\nTAB notas\nESC menu\n\nCONSEJO\n\nSi el silencio cambia, corre.", 18, FontStyle.Normal, textColor, TextAnchor.UpperLeft, new Vector2(28f, -100f), new Vector2(420f, 180f), false);
         body.horizontalOverflow = HorizontalWrapMode.Wrap;
-        body.verticalOverflow = VerticalWrapMode.Overflow;
+        body.verticalOverflow = VerticalWrapMode.Truncate;
     }
 
-    Text CreateStepperRow(Transform parent, string label, Vector2 pos, UnityEngine.Events.UnityAction minus, UnityEngine.Events.UnityAction plus)
+    Text CreateSliderRow(Transform parent, string label, Vector2 pos, float minValue, float maxValue, UnityAction<float> onValueChanged, out Slider slider)
     {
         CreateLabel(parent, label, pos, new Vector2(200f, 28f));
-        CreateSmallButton(parent, "-", pos + new Vector2(248f, -2f), minus);
-        Text value = CreateTopLeftText(label + "Value", parent, "", 18, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, pos + new Vector2(306f, 0f), new Vector2(86f, 28f), false);
-        CreateSmallButton(parent, "+", pos + new Vector2(404f, -2f), plus);
+        slider = CreateSlider(parent, label + "Slider", pos + new Vector2(214f, -2f), new Vector2(172f, 34f), minValue, maxValue, onValueChanged);
+        Text value = CreateTopLeftText(label + "Value", parent, "", 18, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, pos + new Vector2(392f, 0f), new Vector2(54f, 28f), false);
         return value;
     }
 
@@ -388,11 +449,11 @@ public class MainMenuController : MonoBehaviour
         rect.pivot = new Vector2(0.5f, 1f);
         rect.anchoredPosition = pos;
         Image image = button.GetComponent<Image>();
-        image.color = primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.10f) : new Color(1f, 1f, 1f, 0.01f);
+        image.color = primary ? new Color(0.56f, 0.04f, 0.06f, 0.92f) : new Color(0.36f, 0.08f, 0.10f, 0.82f);
         Outline outline = button.GetComponent<Outline>();
         if (outline != null)
         {
-            outline.effectColor = primary ? new Color(1f, 1f, 1f, 0.18f) : new Color(1f, 1f, 1f, 0.10f);
+            outline.effectColor = primary ? new Color(1f, 0.86f, 0.86f, 0.42f) : new Color(0.92f, 0.66f, 0.66f, 0.22f);
             outline.effectDistance = new Vector2(1f, -1f);
         }
         Text buttonLabel = CreateText(label + "Text", button.transform, label, fontSize, FontStyle.Bold, primary ? Color.white : titleColor, TextAnchor.MiddleCenter, Vector2.zero, rect.sizeDelta, false);
@@ -400,13 +461,13 @@ public class MainMenuController : MonoBehaviour
         EventTrigger trigger = button.AddComponent<EventTrigger>();
         AddEvent(trigger, EventTriggerType.PointerEnter, () =>
         {
-            image.color = primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.22f) : buttonHoverColor;
-            rect.localScale = new Vector3(1.02f, 1.02f, 1f);
+            image.color = primary ? new Color(0.78f, 0.10f, 0.12f, 0.98f) : new Color(0.62f, 0.05f, 0.07f, 0.94f);
+            rect.localScale = new Vector3(1.03f, 1.03f, 1f);
             buttonLabel.color = Color.white;
         });
         AddEvent(trigger, EventTriggerType.PointerExit, () =>
         {
-            image.color = primary ? new Color(accentColor.r, accentColor.g, accentColor.b, 0.10f) : new Color(1f, 1f, 1f, 0.01f);
+            image.color = primary ? new Color(0.56f, 0.04f, 0.06f, 0.92f) : new Color(0.36f, 0.08f, 0.10f, 0.82f);
             rect.localScale = Vector3.one;
             buttonLabel.color = primary ? Color.white : titleColor;
         });
@@ -439,14 +500,256 @@ public class MainMenuController : MonoBehaviour
 
     GameObject CreateCard(Transform parent, string name, Vector2 anchor, Vector2 size)
     {
-        GameObject card = CreatePanel(name, parent, new Color(0.02f, 0.03f, 0.04f, 0.90f));
+        GameObject card = CreatePanel(name, parent, MenuCardColor);
         RectTransform rect = card.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = anchor;
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.sizeDelta = size;
         AddOutline(card, lineColor, new Vector2(1f, -1f));
-        AddShadow(card, new Color(0f, 0f, 0f, 0.55f), new Vector2(0f, -8f));
+        AddShadow(card, MenuCardShadowColor, new Vector2(0f, -8f));
         return card;
+    }
+
+    Slider CreateSlider(Transform parent, string name, Vector2 pos, Vector2 size, float minValue, float maxValue, UnityAction<float> onValueChanged)
+    {
+        GameObject sliderObject = CreateUiObject(name, parent);
+        RectTransform rect = sliderObject.GetComponent<RectTransform>();
+        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size;
+
+        Image background = sliderObject.AddComponent<Image>();
+        background.sprite = whiteSprite;
+        background.color = new Color(1f, 1f, 1f, 0.09f);
+
+        Slider slider = sliderObject.AddComponent<Slider>();
+        slider.direction = Slider.Direction.LeftToRight;
+        slider.minValue = minValue;
+        slider.maxValue = maxValue;
+        slider.targetGraphic = background;
+
+        RectTransform fillArea = CreateUiObject("Fill Area", sliderObject.transform).GetComponent<RectTransform>();
+        fillArea.anchorMin = Vector2.zero;
+        fillArea.anchorMax = Vector2.one;
+        fillArea.offsetMin = new Vector2(6f, 8f);
+        fillArea.offsetMax = new Vector2(-22f, -8f);
+
+        Image fill = CreateUiObject("Fill", fillArea).AddComponent<Image>();
+        fill.sprite = whiteSprite;
+        fill.color = new Color(0.88f, 0.34f, 0.34f, 0.95f);
+        RectTransform fillRect = fill.rectTransform;
+        fillRect.anchorMin = new Vector2(0f, 0f);
+        fillRect.anchorMax = new Vector2(1f, 1f);
+        fillRect.offsetMin = Vector2.zero;
+        fillRect.offsetMax = Vector2.zero;
+
+        RectTransform handleSlideArea = CreateUiObject("Handle Slide Area", sliderObject.transform).GetComponent<RectTransform>();
+        handleSlideArea.anchorMin = Vector2.zero;
+        handleSlideArea.anchorMax = Vector2.one;
+        handleSlideArea.offsetMin = new Vector2(10f, 0f);
+        handleSlideArea.offsetMax = new Vector2(-10f, 0f);
+
+        Image handle = CreateUiObject("Handle", handleSlideArea).AddComponent<Image>();
+        handle.sprite = whiteSprite;
+        handle.color = Color.white;
+        RectTransform handleRect = handle.rectTransform;
+        handleRect.sizeDelta = new Vector2(14f, 34f);
+
+        slider.fillRect = fillRect;
+        slider.handleRect = handleRect;
+        slider.onValueChanged.AddListener(onValueChanged);
+
+        ColorBlock colors = slider.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, 0.92f, 0.92f, 1f);
+        colors.pressedColor = new Color(1f, 0.78f, 0.78f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        slider.colors = colors;
+
+        return slider;
+    }
+
+    void EnsureMenuAudio()
+    {
+        menuMusicSource = GetComponent<AudioSource>();
+        if (menuMusicSource == null)
+        {
+            menuMusicSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        menuMusicSource.playOnAwake = false;
+        menuMusicSource.loop = true;
+        menuMusicSource.ignoreListenerPause = true;
+        menuMusicSource.spatialBlend = 0f;
+        menuMusicSource.volume = menuMusicVolume;
+
+        if (menuMusicClip != null)
+        {
+            menuMusicSource.clip = menuMusicClip;
+        }
+    }
+
+    void SetMenuMusicPlaying(bool isPlaying)
+    {
+        if (menuMusicSource == null || menuMusicSource.clip == null)
+        {
+            return;
+        }
+
+        menuMusicSource.volume = menuMusicVolume;
+
+        if (isPlaying)
+        {
+            if (!menuMusicSource.isPlaying)
+            {
+                menuMusicSource.Play();
+            }
+        }
+        else if (menuMusicSource.isPlaying)
+        {
+            menuMusicSource.Stop();
+        }
+    }
+
+    void RefreshMenuVisualState()
+    {
+        bool isPauseMenu = hasStartedGame;
+
+        if (pauseBackdrop != null)
+        {
+            pauseBackdrop.SetActive(isPauseMenu);
+        }
+
+        if (pauseFocusArea != null)
+        {
+            pauseFocusArea.SetActive(isPauseMenu);
+        }
+
+        if (newGameButton != null)
+        {
+            newGameButton.SetActive(isPauseMenu);
+        }
+
+        if (whisperText != null)
+        {
+            whisperText.gameObject.SetActive(!isPauseMenu);
+        }
+
+        RefreshMenuButtonLayout(isPauseMenu);
+    }
+
+    void RefreshMenuButtonLayout(bool isPauseMenu)
+    {
+        SetMenuButtonPosition(playButton, new Vector2(0f, -346f));
+
+        if (isPauseMenu)
+        {
+            SetMenuButtonPosition(newGameButton, new Vector2(0f, -396f));
+            SetMenuButtonPosition(optionsButton, new Vector2(0f, -446f));
+            SetMenuButtonPosition(extrasButton, new Vector2(0f, -496f));
+            SetMenuButtonPosition(quitButton, new Vector2(0f, -546f));
+            SetPanelSize(pauseFocusArea, new Vector2(420f, 352f));
+        }
+        else
+        {
+            SetMenuButtonPosition(optionsButton, new Vector2(0f, -404f));
+            SetMenuButtonPosition(extrasButton, new Vector2(0f, -454f));
+            SetMenuButtonPosition(quitButton, new Vector2(0f, -504f));
+            SetPanelSize(pauseFocusArea, new Vector2(420f, 300f));
+        }
+    }
+
+    void SetMenuButtonPosition(GameObject button, Vector2 position)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        RectTransform rect = button.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.anchoredPosition = position;
+        }
+    }
+
+    void SetPanelSize(GameObject panel, Vector2 size)
+    {
+        if (panel == null)
+        {
+            return;
+        }
+
+        RectTransform rect = panel.GetComponent<RectTransform>();
+        if (rect != null)
+        {
+            rect.sizeDelta = size;
+        }
+    }
+
+    void TuneSceneAtmosphere()
+    {
+        if (!applySceneAtmosphere)
+        {
+            return;
+        }
+
+        RenderSettings.fog = true;
+        RenderSettings.fogMode = FogMode.ExponentialSquared;
+        RenderSettings.fogColor = outdoorFogColor;
+        RenderSettings.fogDensity = outdoorFogDensity;
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientLight = new Color(0.05f, 0.05f, 0.06f, 1f);
+
+        Light[] sceneLights = FindObjectsOfType<Light>(true);
+        foreach (Light sceneLight in sceneLights)
+        {
+            TuneSceneLight(sceneLight);
+        }
+    }
+
+    void TuneSceneLight(Light sceneLight)
+    {
+        if (sceneLight == null)
+        {
+            return;
+        }
+
+        Vector3 position = sceneLight.transform.position;
+        string lightName = sceneLight.name.ToLowerInvariant();
+
+        bool isRogueLight =
+            Mathf.Abs(position.x) > rogueLightBounds.x ||
+            Mathf.Abs(position.y) > rogueLightBounds.y ||
+            Mathf.Abs(position.z) > rogueLightBounds.z;
+
+        if (isRogueLight || lightName.StartsWith("cube"))
+        {
+            sceneLight.enabled = false;
+            return;
+        }
+
+        if (lightName.StartsWith("pointlight_bounce1"))
+        {
+            sceneLight.intensity *= bounceLightIntensityMultiplier;
+            sceneLight.range *= bounceLightRangeMultiplier;
+            sceneLight.color = Color.Lerp(sceneLight.color, new Color(0.28f, 0.34f, 0.40f, 1f), 0.35f);
+            return;
+        }
+
+        if (sceneLight.type == LightType.Point && sceneLight.range <= 8f && sceneLight.intensity >= 1.2f)
+        {
+            sceneLight.intensity *= 0.72f;
+            sceneLight.range *= 0.9f;
+            sceneLight.color = Color.Lerp(sceneLight.color, new Color(0.88f, 0.48f, 0.20f, 1f), 0.2f);
+        }
+
+        if (sceneLight.type == LightType.Spot && lightName.Contains("spot light"))
+        {
+            sceneLight.intensity *= 0.65f;
+            sceneLight.spotAngle = Mathf.Min(sceneLight.spotAngle, 42f);
+        }
     }
 
     Image CreateImage(string name, Transform parent, Sprite sprite, Vector2 pos, Vector2 size)
@@ -487,18 +790,6 @@ public class MainMenuController : MonoBehaviour
         image.sprite = whiteSprite;
         image.color = color;
         return panel;
-    }
-
-    void CreateNoise(Transform parent)
-    {
-        for (int i = 0; i < 20; i++)
-        {
-            Image line = CreateFullPanel("Noise" + i, parent, new Color(1f, 1f, 1f, Random.Range(0.003f, 0.010f)));
-            RectTransform rect = line.rectTransform;
-            rect.anchorMin = new Vector2(0f, Random.Range(0f, 1f));
-            rect.anchorMax = new Vector2(1f, rect.anchorMin.y);
-            rect.sizeDelta = new Vector2(0f, Random.Range(1f, 2f));
-        }
     }
 
     void AddEvent(EventTrigger trigger, EventTriggerType type, UnityEngine.Events.UnityAction action)
@@ -702,11 +993,28 @@ public class MainMenuController : MonoBehaviour
 
     void SetMenuSceneCameraActive(bool isActive)
     {
-        if (!useSceneBackgroundCamera)
+        bool useBackgroundCameraForThisMenu = useSceneBackgroundCamera && (!hasStartedGame || !keepCurrentViewOnPause);
+
+        if (!useBackgroundCameraForThisMenu)
         {
             if (menuBackgroundCamera != null)
             {
                 menuBackgroundCamera.enabled = false;
+            }
+
+            if (gameplayCamera != null)
+            {
+                gameplayCamera.enabled = true;
+            }
+
+            if (gameplayAudioListener != null)
+            {
+                gameplayAudioListener.enabled = true;
+            }
+
+            if (gameplayCinemachineBrain != null)
+            {
+                gameplayCinemachineBrain.enabled = true;
             }
 
             return;
@@ -772,6 +1080,11 @@ public class MainMenuController : MonoBehaviour
     }
 
 #if UNITY_EDITOR
+    void Reset()
+    {
+        AssignDefaultMenuMusic();
+    }
+
     void OnValidate()
     {
         if (Application.isPlaying)
@@ -779,6 +1092,8 @@ public class MainMenuController : MonoBehaviour
             return;
         }
 
+        menuMusicVolume = Mathf.Clamp(menuMusicVolume, 0f, 1f);
+        AssignDefaultMenuMusic();
         EditorApplication.delayCall -= DelayedEnsureMenuRig;
         EditorApplication.delayCall += DelayedEnsureMenuRig;
     }
@@ -796,6 +1111,16 @@ public class MainMenuController : MonoBehaviour
         }
 
         EnsureMenuCameraRig();
+    }
+
+    void AssignDefaultMenuMusic()
+    {
+        if (menuMusicClip != null)
+        {
+            return;
+        }
+
+        menuMusicClip = AssetDatabase.LoadAssetAtPath<AudioClip>(DefaultMenuMusicPath);
     }
 #endif
 }
