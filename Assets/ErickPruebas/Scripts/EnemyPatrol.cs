@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.AI;
 
 [DisallowMultipleComponent]
@@ -45,27 +45,22 @@ public class EnemyPatrol : MonoBehaviour
     private void Update()
     {
         if (agent == null || !agent.isOnNavMesh)
-        {
             return;
-        }
 
         if (agent.pathPending)
+            return;
+
+        // Si no tiene camino → FORZAR nuevo destino
+        if (!agent.hasPath)
         {
+            SetNewDestination();
             return;
         }
 
-        bool reachedDestination = agent.remainingDistance <= Mathf.Max(agent.stoppingDistance, 0.05f);
-        bool finishedMoving = !agent.hasPath || agent.velocity.sqrMagnitude <= 0.01f;
-
-        if (reachedDestination && finishedMoving)
+        // Si llegó al destino
+        if (agent.remainingDistance <= agent.stoppingDistance)
         {
-            timer += Time.deltaTime;
-
-            if (timer >= waitTime)
-            {
-                SetNewDestination();
-                timer = 0f;
-            }
+            SetNewDestination();
         }
     }
 
