@@ -128,6 +128,8 @@ public class ObjectiveSystem : MonoBehaviour
     }
 
     public int FuelCollectedCount => collectedFuelIds.Count;
+    public int RequiredFuelCount => totalFuelRequired;
+    public bool HasRequiredFuel => FuelCollectedCount >= totalFuelRequired;
     public int NotesReadCount => readNoteIds.Count;
     public bool HasCollectedMap => mapCollected;
     public bool IsHouseObjectiveUnlocked => houseObjectiveUnlocked;

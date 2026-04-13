@@ -17,11 +17,19 @@ public class MapSystem : MonoBehaviour
     private bool hasMap = false;
     private bool mapOpen = false;
     private Camera mapCamera;
+    private int mapIconsLayer = -1;
 
     void Awake()
     {
         ResolveMapCamera();
+        ResolveMapIconsLayer();
+        ApplyMapIconCameraFiltering();
         ApplyMapCameraState();
+    }
+
+    void LateUpdate()
+    {
+        ApplyMapIconCameraFiltering();
     }
 
     void Update()
@@ -113,9 +121,55 @@ public class MapSystem : MonoBehaviour
         }
     }
 
+    private void ResolveMapIconsLayer()
+    {
+        if (mapIconsLayer >= 0)
+        {
+            return;
+        }
+
+        mapIconsLayer = LayerMask.NameToLayer("MapIcons");
+    }
+
+    private void ApplyMapIconCameraFiltering()
+    {
+        ResolveMapCamera();
+        ResolveMapIconsLayer();
+
+        if (mapIconsLayer < 0)
+        {
+            return;
+        }
+
+        int mapIconsMask = 1 << mapIconsLayer;
+        Camera[] cameras = FindObjectsOfType<Camera>(true);
+
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            Camera camera = cameras[i];
+            if (camera == null)
+            {
+                continue;
+            }
+
+            bool isDedicatedMapCamera = camera == mapCamera
+                || (camera.targetTexture != null && camera.name == "MapCamera");
+
+            if (isDedicatedMapCamera)
+            {
+                camera.cullingMask |= mapIconsMask;
+            }
+            else
+            {
+                camera.cullingMask &= ~mapIconsMask;
+            }
+        }
+    }
+
     private void ApplyMapCameraState()
     {
         ResolveMapCamera();
+        ApplyMapIconCameraFiltering();
 
         if (mapCamera == null)
         {
