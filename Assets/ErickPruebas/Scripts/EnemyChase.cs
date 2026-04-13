@@ -89,4 +89,11 @@ public class EnemyChase : MonoBehaviour
 
         Debug.Log("Patrullando");
     }
+    void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            GameOverManager.instance.TriggerGameOver();
+        }
+    }
 }
