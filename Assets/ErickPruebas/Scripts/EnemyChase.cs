@@ -46,10 +46,10 @@ public class EnemyChase : MonoBehaviour
             detectionRange *= crouchDetectionMultiplier;
 
         Vector3 dirToPlayer = (player.position - transform.position).normalized;
-
         float angle = Vector3.Angle(transform.forward, dirToPlayer);
 
         bool canSeePlayer = false;
+
         if (Physics.Raycast(transform.position + Vector3.up, dirToPlayer, out RaycastHit hit, detectionRange))
         {
             if (hit.transform == player)
@@ -79,7 +79,7 @@ public class EnemyChase : MonoBehaviour
         isChasing = true;
         agent.speed = chaseSpeed;
 
-        Debug.Log("Enemigo persiguiendo");
+        Debug.Log("Persiguiendo");
     }
 
     void StopChase()
@@ -87,6 +87,6 @@ public class EnemyChase : MonoBehaviour
         isChasing = false;
         agent.speed = patrolSpeed;
 
-        Debug.Log("Enemigo volvió a patrullar");
+        Debug.Log("Patrullando");
     }
 }
