@@ -8538,7 +8538,7 @@ MonoBehaviour:
   noteVideoPath: 
   closingVideoEndMessage: 
   closingVideoEndMessageDuration: 4
-  noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
+  noteData: {fileID: 11400000, guid: 4bf0e51897454b10a43f61f90ca7f09b, type: 2}
   playerInside: 0
 --- !u!65 &61372089
 BoxCollider:
@@ -54959,6 +54959,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BookHeadMonster
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 635547659545568360, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
@@ -71782,7 +71786,7 @@ MonoBehaviour:
   noteVideoPath: 
   closingVideoEndMessage: 
   closingVideoEndMessageDuration: 4
-  noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
+  noteData: {fileID: 11400000, guid: 5e3149f077ec4cb6aeabf4fcb24d91fd, type: 2}
   playerInside: 0
 --- !u!65 &540103086
 BoxCollider:
@@ -117563,6 +117567,13 @@ MonoBehaviour:
   interactText: {fileID: 513823394}
   notePanel: {fileID: 781849697}
   noteText: {fileID: 1957641246}
+  openNoteReaderOnPickup: 0
+  noteBackdropColor: {r: 0.01, g: 0.02, b: 0.03, a: 0.72}
+  notePaperColor: {r: 0.92, g: 0.87, b: 0.73, a: 0.98}
+  notePaperShadowColor: {r: 0, g: 0, b: 0, a: 0.35}
+  noteInkColor: {r: 0.16, g: 0.12, b: 0.08, a: 1}
+  noteAccentColor: {r: 0.45, g: 0.31, b: 0.16, a: 0.82}
+  notePaperSize: {x: 740, y: 860}
 --- !u!4 &872448347
 Transform:
   m_ObjectHideFlags: 0
@@ -118278,7 +118289,7 @@ MonoBehaviour:
   noteVideoPath: 
   closingVideoEndMessage: 
   closingVideoEndMessageDuration: 4
-  noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
+  noteData: {fileID: 11400000, guid: 3f2f1ca3bd364f0f8384c51110d5f65a, type: 2}
   playerInside: 0
 --- !u!65 &876980366
 BoxCollider:
@@ -191055,7 +191066,7 @@ MonoBehaviour:
   noteVideoPath: 
   closingVideoEndMessage: 
   closingVideoEndMessageDuration: 4
-  noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
+  noteData: {fileID: 11400000, guid: cdb80c430bff4c8696f4dc7205dfcb27, type: 2}
   playerInside: 0
 --- !u!65 &1414108756
 BoxCollider:
@@ -229185,6 +229196,75 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b202f9933e5d7394689b70295c34e096, type: 3}
+--- !u!1001 &1687911456
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.5745
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.5745
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.5745
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 542.87
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 18.126
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 227.89
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
+      propertyPath: m_Name
+      value: BookHeadMonster (1)
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 68d59539aed38464ab78bbd5725301c8, type: 3}
 --- !u!1001 &1688214942
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -245414,7 +245494,7 @@ MonoBehaviour:
   noteVideoPath: 
   closingVideoEndMessage: 
   closingVideoEndMessageDuration: 4
-  noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
+  noteData: {fileID: 11400000, guid: 7d3d72d272b4498f92d3200cc6f127a9, type: 2}
   playerInside: 0
 --- !u!65 &1810429627
 BoxCollider:
@@ -287806,7 +287886,7 @@ MonoBehaviour:
   noteVideoPath: 
   closingVideoEndMessage: 
   closingVideoEndMessageDuration: 4
-  noteData: {fileID: 11400000, guid: efc03fc6e2186724ea21b4ace1475786, type: 2}
+  noteData: {fileID: 11400000, guid: 2e7d7659ceda46559d59670bd487c698, type: 2}
   playerInside: 0
 --- !u!65 &2120169853
 BoxCollider:
@@ -297046,3 +297126,4 @@ SceneRoots:
   - {fileID: 417668130}
   - {fileID: 1009763833}
   - {fileID: 112645975}
+  - {fileID: 1687911456}

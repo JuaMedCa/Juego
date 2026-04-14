@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 523718b9f4b384e4cb4afc70c487f81d, type: 3}
+  m_Name: Note7
+  m_EditorClassIdentifier: 
+  title: Documento 7
+  previewText: "Estoy bajo la gasolinera."
+  noteText: "Me movieron al pozo de drenaje bajo la gasolinera. El monstruo vigila
+    la entrada y no creo poder salir sola. Si no puedes bajar por mi, huye en el
+    jeep, regresa armado y no olvides este lugar. Todavia sigo aqui."
