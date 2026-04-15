@@ -39,7 +39,7 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] Color faintTextColor = new Color(0.50f, 0.50f, 0.50f, 1f);
     [SerializeField] Color lineColor = new Color(1f, 1f, 1f, 0.08f);
     [SerializeField] Color pauseBackdropColor = new Color(0.01f, 0.01f, 0.02f, 0.42f);
-    [SerializeField] bool keepCurrentViewOnPause = true;
+    [SerializeField] bool keepCurrentViewOnPause = false;
 
     [Header("Menu Audio")]
     [SerializeField] AudioClip menuMusicClip;
@@ -195,6 +195,7 @@ public class MainMenuController : MonoBehaviour
     {
         SetGamePaused(true);
         SetGameplayEnabled(false);
+        CacheGameplayHudRoots();
         menuRoot.SetActive(true);
         optionsPanel.SetActive(false);
         extrasPanel.SetActive(false);
@@ -213,6 +214,7 @@ public class MainMenuController : MonoBehaviour
     {
         SetGamePaused(false);
         SetGameplayEnabled(true);
+        CacheGameplayHudRoots();
         menuRoot.SetActive(false);
         optionsPanel.SetActive(false);
         extrasPanel.SetActive(false);
@@ -929,14 +931,31 @@ public class MainMenuController : MonoBehaviour
         }
 #endif
 
-        menuCameraRigRoot = transform.Find("MenuCameraRig");
+        if (menuCameraRigRoot == null)
+        {
+            GameObject existingRoot = GameObject.Find("MenuCameraRig");
+            if (existingRoot != null)
+            {
+                menuCameraRigRoot = existingRoot.transform;
+            }
+        }
+
+        if (menuCameraRigRoot == null)
+        {
+            menuCameraRigRoot = transform.Find("MenuCameraRig");
+        }
+
         if (menuCameraRigRoot == null)
         {
             GameObject rigObject = new GameObject("MenuCameraRig", typeof(Transform));
-            rigObject.transform.SetParent(transform, false);
-            rigObject.transform.localPosition = new Vector3(-12f, 5f, -10f);
-            rigObject.transform.localRotation = Quaternion.identity;
+            rigObject.transform.SetParent(null, false);
+            rigObject.transform.position = transform.position;
+            rigObject.transform.rotation = transform.rotation;
             menuCameraRigRoot = rigObject.transform;
+        }
+        else if (menuCameraRigRoot.parent == transform)
+        {
+            menuCameraRigRoot.SetParent(null, true);
         }
 
         menuCameraTarget = menuCameraRigRoot.Find("MenuCameraTarget");
@@ -944,7 +963,7 @@ public class MainMenuController : MonoBehaviour
         {
             GameObject targetObject = new GameObject("MenuCameraTarget", typeof(Transform));
             targetObject.transform.SetParent(menuCameraRigRoot, false);
-            targetObject.transform.localPosition = new Vector3(0f, 1.6f, 6f);
+            targetObject.transform.localPosition = new Vector3(0f, 0f, 10f);
             targetObject.transform.localRotation = Quaternion.identity;
             menuCameraTarget = targetObject.transform;
         }
@@ -1045,10 +1064,7 @@ public class MainMenuController : MonoBehaviour
 
     void SetHudVisible(bool visible)
     {
-        if (notesHudRoot != null)
-        {
-            notesHudRoot.SetActive(visible);
-        }
+        CacheGameplayHudRoots();
 
         if (interactHudRoot != null)
         {
@@ -1065,10 +1081,8 @@ public class MainMenuController : MonoBehaviour
             fpsHudRoot.SetActive(visible);
         }
 
-        if (ObjectiveSystem.HasInstance)
-        {
-            ObjectiveSystem.Instance.SetHudVisible(visible);
-        }
+        ToggleNamedObject("Txt_NotasContador", visible);
+        ObjectiveSystem.EnsureInstance().SetHudVisible(visible);
     }
 
     void CacheGameplayHudRoots()
@@ -1077,6 +1091,15 @@ public class MainMenuController : MonoBehaviour
         interactHudRoot = GameObject.Find("InteractText");
         messageHudRoot = GameObject.Find("Mensajes");
         fpsHudRoot = GameObject.Find("FPSDisplay");
+    }
+
+    void ToggleNamedObject(string objectName, bool visible)
+    {
+        GameObject target = GameObject.Find(objectName);
+        if (target != null)
+        {
+            target.SetActive(visible);
+        }
     }
 
 #if UNITY_EDITOR

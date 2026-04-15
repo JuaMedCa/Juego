@@ -253,6 +253,17 @@ public class InventoryManager : MonoBehaviour
                 i + 1));
         }
 
+        orderedNotes.Sort((left, right) =>
+        {
+            int orderComparison = ExtractSortOrder(left).CompareTo(ExtractSortOrder(right));
+            if (orderComparison != 0)
+            {
+                return orderComparison;
+            }
+
+            return string.Compare(left.DisplayName, right.DisplayName, StringComparison.OrdinalIgnoreCase);
+        });
+
         return orderedNotes;
     }
 
@@ -309,5 +320,39 @@ public class InventoryManager : MonoBehaviour
             Collected = collected;
             Order = order;
         }
+    }
+
+    private static int ExtractSortOrder(NoteSnapshot snapshot)
+    {
+        string[] candidates =
+        {
+            snapshot.DisplayName,
+            snapshot.NoteId
+        };
+
+        for (int candidateIndex = 0; candidateIndex < candidates.Length; candidateIndex++)
+        {
+            string candidate = candidates[candidateIndex];
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                continue;
+            }
+
+            StringBuilder digits = new StringBuilder();
+            for (int i = 0; i < candidate.Length; i++)
+            {
+                if (char.IsDigit(candidate[i]))
+                {
+                    digits.Append(candidate[i]);
+                }
+            }
+
+            if (digits.Length > 0 && int.TryParse(digits.ToString(), out int parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return snapshot.Order;
     }
 }

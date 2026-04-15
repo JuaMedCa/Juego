@@ -6,6 +6,7 @@ using UnityEngine;
 public class NoteData : ScriptableObject
 {
     public string title;
+    public string previewText;
 
     [TextArea(5, 10)]
     public string noteText;
