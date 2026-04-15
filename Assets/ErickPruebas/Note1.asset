@@ -12,4 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 523718b9f4b384e4cb4afc70c487f81d, type: 3}
   m_Name: Note1
   m_EditorClassIdentifier: 
-  noteText: "\"No deb\xED abrir esa puerta...\""
+  title: Documento 1
+  previewText: "Segui la senal hasta la gasolinera."
+  noteText: "Tome tu linterna y segui la senal hasta la gasolinera vieja. Escuche
+    mi nombre viniendo desde la casa del camino, como si alguien me imitara en
+    la oscuridad. Si lees esto, no me busques por la carretera principal; entra
+    a la casa con cuidado y revisa el cuarto del fondo."
