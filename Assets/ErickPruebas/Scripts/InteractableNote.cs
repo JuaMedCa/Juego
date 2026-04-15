@@ -121,18 +121,21 @@ public class InteractableNote : MonoBehaviour
 
     private string ResolvePreviewText()
     {
-        if (noteData == null || string.IsNullOrWhiteSpace(noteData.noteText))
+        if (noteData == null)
         {
             return "Pendiente por inspeccionar";
         }
 
-        string cleanText = noteData.noteText.Replace("\r", " ").Replace("\n", " ").Trim();
-        if (cleanText.Length <= 48)
+        string preferredPreview = !string.IsNullOrWhiteSpace(noteData.previewText)
+            ? noteData.previewText
+            : noteData.noteText;
+
+        if (string.IsNullOrWhiteSpace(preferredPreview))
         {
-            return cleanText;
+            return "Pendiente por inspeccionar";
         }
 
-        return cleanText.Substring(0, 48).TrimEnd() + "...";
+        return BuildShortPreview(preferredPreview, 8);
     }
 
     private string ResolveFullText()
@@ -195,5 +198,22 @@ public class InteractableNote : MonoBehaviour
         }
 
         return digits.ToString();
+    }
+
+    private static string BuildShortPreview(string sourceText, int maxWords)
+    {
+        if (string.IsNullOrWhiteSpace(sourceText))
+        {
+            return "Pendiente por inspeccionar";
+        }
+
+        string cleanText = sourceText.Replace("\r", " ").Replace("\n", " ").Trim();
+        string[] words = cleanText.Split(new[] { ' ' }, System.StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length <= maxWords)
+        {
+            return cleanText;
+        }
+
+        return string.Join(" ", words, 0, maxWords).TrimEnd() + "...";
     }
 }

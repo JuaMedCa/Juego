@@ -59,6 +59,8 @@ public class ObjectiveSystem : MonoBehaviour
     private bool mapCollected;
     private bool houseObjectiveUnlocked;
     private bool returnObjectiveUnlocked;
+    private bool hudUnlocked;
+    private bool hudRequestedVisible = true;
 
     private GameObject hudRoot;
     private Canvas hudCanvas;
@@ -76,6 +78,7 @@ public class ObjectiveSystem : MonoBehaviour
         instance = this;
         DontDestroyOnLoad(gameObject);
         EnsureHud();
+        hudUnlocked = NotesReadCount > 0;
         RefreshObjectiveText();
     }
 
@@ -120,10 +123,13 @@ public class ObjectiveSystem : MonoBehaviour
             houseObjectiveUnlocked = true;
         }
 
+        hudUnlocked = true;
         RefreshObjectiveText();
     }
 
     public int FuelCollectedCount => collectedFuelIds.Count;
+    public int RequiredFuelCount => totalFuelRequired;
+    public bool HasRequiredFuel => FuelCollectedCount >= totalFuelRequired;
     public int NotesReadCount => readNoteIds.Count;
     public bool HasCollectedMap => mapCollected;
     public bool IsHouseObjectiveUnlocked => houseObjectiveUnlocked;
@@ -131,12 +137,9 @@ public class ObjectiveSystem : MonoBehaviour
 
     public void SetHudVisible(bool visible)
     {
+        hudRequestedVisible = visible;
         EnsureHud();
-
-        if (hudRoot != null)
-        {
-            hudRoot.SetActive(visible);
-        }
+        ApplyHudVisibility();
     }
 
     private void EnsureHud()
@@ -202,7 +205,7 @@ public class ObjectiveSystem : MonoBehaviour
         objectiveText.alignment = TextAlignmentOptions.TopLeft;
         objectiveText.enableWordWrapping = true;
 
-        SetHudVisible(true);
+        ApplyHudVisibility();
     }
 
     private RectTransform FindOrCreateChildRect(string objectName, Transform parent)
@@ -235,6 +238,7 @@ public class ObjectiveSystem : MonoBehaviour
         hudLines.AddRange(GetActiveObjectiveLines());
 
         objectiveText.text = string.Join("\n", hudLines);
+        ApplyHudVisibility();
         ObjectivesChanged?.Invoke();
     }
 
@@ -280,6 +284,14 @@ public class ObjectiveSystem : MonoBehaviour
     private bool TotalNotesTargetVisible()
     {
         return NotesReadCount > 0 || totalNotesTarget > 0;
+    }
+
+    private void ApplyHudVisibility()
+    {
+        if (hudRoot != null)
+        {
+            hudRoot.SetActive(hudRequestedVisible && hudUnlocked);
+        }
     }
 
     private static string NormalizeId(string rawId)

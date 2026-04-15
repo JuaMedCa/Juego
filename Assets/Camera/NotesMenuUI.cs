@@ -61,11 +61,18 @@ public class NotesMenuUI : MonoBehaviour
     [SerializeField] private Color badgeTextColor = new Color(0.07f, 0.06f, 0.05f, 1f);
     [SerializeField] private Color slotIndexColor = new Color(0.78f, 0.74f, 0.64f, 0.48f);
     [SerializeField] private Vector2 slotCardSize = new Vector2(240f, 108f);
+    [SerializeField] private int notesPerPage = 4;
+    [SerializeField] private Color pageTabActiveColor = new Color(0.69f, 0.58f, 0.35f, 0.96f);
+    [SerializeField] private Color pageTabInactiveColor = new Color(0.16f, 0.17f, 0.20f, 0.96f);
+    [SerializeField] private Color detailPanelColor = new Color(0.08f, 0.09f, 0.12f, 0.98f);
+    [SerializeField] private Color detailBackdropColor = new Color(0.01f, 0.02f, 0.04f, 0.72f);
 
     private bool isOpen = false;
     private bool isAnimating = false;
     private Coroutine animationCoroutine;
     private readonly List<NoteSlotView> noteSlots = new List<NoteSlotView>();
+    private readonly List<InventoryManager.NoteSnapshot> cachedNotes = new List<InventoryManager.NoteSnapshot>();
+    private readonly List<PageTabView> pageTabs = new List<PageTabView>();
     private Vector2 openAnchoredPosition;
     private Vector2 hiddenAnchoredPosition;
     private RectTransform titleRect;
@@ -74,6 +81,13 @@ public class NotesMenuUI : MonoBehaviour
     private TMP_Text tabLabelText;
     private TMP_Text menuInventoryCardText;
     private GridLayoutGroup notesGridLayout;
+    private RectTransform pageTabsContainer;
+    private GameObject noteReaderOverlay;
+    private TMP_Text noteReaderTitle;
+    private TMP_Text noteReaderBody;
+    private ScrollRect noteReaderScrollRect;
+    private LayoutElement noteReaderBodyLayoutElement;
+    private int currentPageIndex;
 
     private void Awake()
     {
@@ -84,6 +98,8 @@ public class NotesMenuUI : MonoBehaviour
         BuildArchiveFrame();
         CachePanelPositions();
         BuildHeaderTab();
+        BuildPageTabsContainer();
+        BuildNoteReaderOverlay();
         LayoutNoteSlots();
     }
 
@@ -218,6 +234,7 @@ public class NotesMenuUI : MonoBehaviour
         panelContainer.localScale = closedScale;
         panelContainer.anchoredPosition = hiddenAnchoredPosition;
 
+        CloseNoteReader();
         notesMenu.SetActive(false);
         ObjectiveSystem.EnsureInstance().SetHudVisible(true);
 
@@ -249,8 +266,9 @@ public class NotesMenuUI : MonoBehaviour
         }
 
         if (notesMenu != null)
-            notesMenu.SetActive(false);
+        notesMenu.SetActive(false);
 
+        CloseNoteReader();
         ObjectiveSystem.EnsureInstance().SetHudVisible(true);
         Time.timeScale = 1f;
     }
@@ -358,11 +376,11 @@ public class NotesMenuUI : MonoBehaviour
 
         for (int i = 0; i < slotRoots.Count; i++)
         {
-            noteSlots.Add(BuildSlotView(slotRoots[i], i + 1));
+            noteSlots.Add(BuildSlotView(slotRoots[i], i, i + 1));
         }
     }
 
-    private NoteSlotView BuildSlotView(RectTransform slotRoot, int slotNumber)
+    private NoteSlotView BuildSlotView(RectTransform slotRoot, int slotIndex, int slotNumber)
     {
         Image background = slotRoot.GetComponent<Image>();
         TMP_Text title = FindText(slotRoot, "SlotTitle");
@@ -371,8 +389,10 @@ public class NotesMenuUI : MonoBehaviour
         Image badgeBackground = EnsureImage(slotRoot, "SlotBadge");
         TMP_Text badgeText = EnsureText(badgeBackground.rectTransform, "SlotBadgeText");
         TMP_Text indexText = EnsureText(slotRoot, "SlotIndex");
+        Button button = GetOrAddComponent<Button>(slotRoot.gameObject);
 
         StyleSlotChrome(slotRoot, background, accent, badgeBackground, badgeText, indexText);
+        ConfigureSlotButton(button, background, slotIndex);
 
         if (title == null)
         {
@@ -387,7 +407,7 @@ public class NotesMenuUI : MonoBehaviour
         ConfigureSlotText(title, 24f, 18f, 112f, 52f, 21f, FontStyles.Bold, discoveredTextColor);
         ConfigureSlotText(status, 24f, 54f, 18f, 16f, 15f, FontStyles.Normal, discoveredAccentColor);
 
-        return new NoteSlotView(slotNumber, slotRoot, background, accent, badgeBackground, badgeText, indexText, title, status, slotRoot.anchoredPosition, slotRoot.sizeDelta);
+        return new NoteSlotView(slotNumber, slotRoot, background, accent, badgeBackground, badgeText, indexText, title, status, button, slotRoot.anchoredPosition, slotRoot.sizeDelta);
     }
 
     private TMP_Text FindText(RectTransform root, string objectName)
@@ -681,15 +701,27 @@ public class NotesMenuUI : MonoBehaviour
             LayoutNoteSlots();
         }
 
+        cachedNotes.Clear();
+        if (orderedNotes != null)
+        {
+            cachedNotes.AddRange(orderedNotes);
+        }
+
+        int totalPages = Mathf.Max(1, Mathf.CeilToInt(Mathf.Max(1, cachedNotes.Count) / (float)Mathf.Max(1, notesPerPage)));
+        currentPageIndex = Mathf.Clamp(currentPageIndex, 0, totalPages - 1);
+        UpdatePageTabs(totalPages);
+
+        int pageStartIndex = currentPageIndex * Mathf.Max(1, notesPerPage);
         for (int i = 0; i < noteSlots.Count; i++)
         {
-            if (orderedNotes != null && i < orderedNotes.Count)
+            int noteIndex = pageStartIndex + i;
+            if (noteIndex >= 0 && noteIndex < cachedNotes.Count)
             {
-                ApplyNoteToSlot(noteSlots[i], orderedNotes[i]);
+                ApplyNoteToSlot(noteSlots[i], cachedNotes[noteIndex]);
             }
             else
             {
-                ApplyEmptyState(noteSlots[i], i + 1);
+                ApplyEmptyState(noteSlots[i], noteIndex + 1);
             }
         }
     }
@@ -720,16 +752,20 @@ public class NotesMenuUI : MonoBehaviour
         slot.Title.color = note.Collected ? discoveredTextColor : pendingTextColor;
         slot.Status.color = note.Collected ? discoveredAccentColor : pendingAccentColor;
         slot.Title.text = note.DisplayName;
-        slot.Status.text = note.Collected ? note.FullText : "Pendiente por inspeccionar";
+        slot.Status.text = note.Collected ? note.PreviewText : "Pendiente por inspeccionar";
         slot.Status.enableWordWrapping = true;
         slot.Status.overflowMode = TextOverflowModes.Ellipsis;
         slot.Status.maxVisibleLines = 2;
         slot.Title.enableWordWrapping = false;
         slot.Title.overflowMode = TextOverflowModes.Ellipsis;
+        if (slot.Button != null)
+        {
+            slot.Button.interactable = note.Collected;
+        }
 
         if (slot.IndexText != null)
         {
-            slot.IndexText.text = $"#{slot.SlotNumber:00}";
+            slot.IndexText.text = $"#{note.Order:00}";
             slot.IndexText.color = slotIndexColor;
         }
     }
@@ -761,6 +797,10 @@ public class NotesMenuUI : MonoBehaviour
         slot.Status.color = pendingAccentColor;
         slot.Title.text = $"Expediente {index:00}";
         slot.Status.text = "Sin registro";
+        if (slot.Button != null)
+        {
+            slot.Button.interactable = false;
+        }
 
         if (slot.IndexText != null)
         {
@@ -802,6 +842,381 @@ public class NotesMenuUI : MonoBehaviour
         }
     }
 
+    private void OnNoteSlotClicked(int slotIndex)
+    {
+        int absoluteIndex = currentPageIndex * Mathf.Max(1, notesPerPage) + slotIndex;
+        if (absoluteIndex < 0 || absoluteIndex >= cachedNotes.Count)
+        {
+            return;
+        }
+
+        InventoryManager.NoteSnapshot note = cachedNotes[absoluteIndex];
+        if (!note.Collected)
+        {
+            return;
+        }
+
+        OpenNoteReader(note);
+    }
+
+    private void BuildPageTabsContainer()
+    {
+        if (panelContainer == null)
+        {
+            return;
+        }
+
+        pageTabsContainer = EnsureRectTransform(panelContainer, "ArchivePageTabs");
+        ConfigureVisualRect(pageTabsContainer, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(28f, 22f), new Vector2(220f, 30f));
+
+        HorizontalLayoutGroup layoutGroup = GetOrAddComponent<HorizontalLayoutGroup>(pageTabsContainer.gameObject);
+        layoutGroup.childAlignment = TextAnchor.MiddleLeft;
+        layoutGroup.spacing = 8f;
+        layoutGroup.childForceExpandWidth = false;
+        layoutGroup.childForceExpandHeight = false;
+        layoutGroup.childControlWidth = false;
+        layoutGroup.childControlHeight = false;
+
+        ContentSizeFitter fitter = GetOrAddComponent<ContentSizeFitter>(pageTabsContainer.gameObject);
+        fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+    }
+
+    private void UpdatePageTabs(int totalPages)
+    {
+        if (pageTabsContainer == null)
+        {
+            BuildPageTabsContainer();
+        }
+
+        if (pageTabsContainer == null)
+        {
+            return;
+        }
+
+        totalPages = Mathf.Max(1, totalPages);
+
+        while (pageTabs.Count < totalPages)
+        {
+            int pageIndex = pageTabs.Count;
+            pageTabs.Add(CreatePageTab(pageIndex));
+        }
+
+        for (int i = 0; i < pageTabs.Count; i++)
+        {
+            bool visible = i < totalPages;
+            pageTabs[i].Root.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                continue;
+            }
+
+            bool isActive = i == currentPageIndex;
+            pageTabs[i].Background.color = isActive ? pageTabActiveColor : pageTabInactiveColor;
+            pageTabs[i].Label.text = $"{i + 1:00}";
+            pageTabs[i].Label.color = isActive ? tabTextColor : discoveredTextColor;
+        }
+
+        pageTabsContainer.gameObject.SetActive(totalPages > 1);
+    }
+
+    private PageTabView CreatePageTab(int pageIndex)
+    {
+        RectTransform root = EnsureRectTransform(pageTabsContainer, $"PageTab_{pageIndex + 1:00}");
+        root.sizeDelta = new Vector2(42f, 28f);
+
+        Image background = GetOrAddComponent<Image>(root.gameObject);
+        background.color = pageTabInactiveColor;
+        background.raycastTarget = true;
+
+        Outline outline = GetOrAddComponent<Outline>(root.gameObject);
+        outline.effectColor = new Color(0f, 0f, 0f, 0.18f);
+        outline.effectDistance = new Vector2(1f, -1f);
+
+        Button button = GetOrAddComponent<Button>(root.gameObject);
+        button.targetGraphic = background;
+        button.transition = Selectable.Transition.ColorTint;
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, 1f, 1f, 0.95f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.pressedColor = new Color(0.88f, 0.88f, 0.88f, 0.85f);
+        colors.disabledColor = new Color(1f, 1f, 1f, 0.45f);
+        colors.fadeDuration = 0.08f;
+        button.colors = colors;
+        button.onClick.RemoveAllListeners();
+        int capturedPageIndex = pageIndex;
+        button.onClick.AddListener(() => SetCurrentPage(capturedPageIndex));
+
+        TMP_Text label = EnsureText(root, "PageTabLabel");
+        ConfigureTextRect(label.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        label.fontSize = 15f;
+        label.fontStyle = FontStyles.Bold;
+        label.alignment = TextAlignmentOptions.Center;
+        label.enableWordWrapping = false;
+
+        return new PageTabView(root, background, label, button);
+    }
+
+    private void SetCurrentPage(int pageIndex)
+    {
+        currentPageIndex = Mathf.Max(0, pageIndex);
+        CloseNoteReader();
+        RefreshNoteSlots(new List<InventoryManager.NoteSnapshot>(cachedNotes));
+    }
+
+    private void BuildNoteReaderOverlay()
+    {
+        if (panelContainer == null || noteReaderOverlay != null)
+        {
+            return;
+        }
+
+        Color parchmentColor = new Color(0.92f, 0.87f, 0.73f, 0.98f);
+        Color parchmentShadowColor = new Color(0f, 0f, 0f, 0.35f);
+        Color inkColor = new Color(0.16f, 0.12f, 0.08f, 1f);
+        Color accentInkColor = new Color(0.46f, 0.31f, 0.16f, 0.86f);
+
+        RectTransform overlayRoot = EnsureRectTransform(panelContainer, "NoteReaderOverlay");
+        StretchRect(overlayRoot);
+        overlayRoot.SetAsLastSibling();
+
+        Image overlayImage = GetOrAddComponent<Image>(overlayRoot.gameObject);
+        overlayImage.color = detailBackdropColor;
+        overlayImage.raycastTarget = true;
+        noteReaderOverlay = overlayRoot.gameObject;
+
+        RectTransform detailCard = EnsureRectTransform(overlayRoot, "NoteReaderCard");
+        ConfigureVisualRect(detailCard, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(620f, 760f));
+        Image detailCardImage = GetOrAddComponent<Image>(detailCard.gameObject);
+        detailCardImage.color = parchmentColor;
+        detailCardImage.raycastTarget = true;
+
+        Outline detailOutline = GetOrAddComponent<Outline>(detailCard.gameObject);
+        detailOutline.effectColor = new Color(0.33f, 0.23f, 0.12f, 0.34f);
+        detailOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+        Shadow detailShadow = GetOrAddComponent<Shadow>(detailCard.gameObject);
+        detailShadow.effectColor = parchmentShadowColor;
+        detailShadow.effectDistance = new Vector2(10f, -10f);
+
+        RectTransform edgeTop = EnsureRectTransform(detailCard, "NoteReaderEdgeTop");
+        ConfigureVisualRect(edgeTop, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -8f), new Vector2(-30f, 26f));
+        Image edgeTopImage = GetOrAddComponent<Image>(edgeTop.gameObject);
+        edgeTopImage.color = new Color(0.63f, 0.48f, 0.25f, 0.14f);
+        edgeTopImage.raycastTarget = false;
+
+        RectTransform edgeBottom = EnsureRectTransform(detailCard, "NoteReaderEdgeBottom");
+        ConfigureVisualRect(edgeBottom, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 8f), new Vector2(-42f, 34f));
+        Image edgeBottomImage = GetOrAddComponent<Image>(edgeBottom.gameObject);
+        edgeBottomImage.color = new Color(0.39f, 0.27f, 0.14f, 0.15f);
+        edgeBottomImage.raycastTarget = false;
+
+        RectTransform sideShadeLeft = EnsureRectTransform(detailCard, "NoteReaderSideShadeLeft");
+        ConfigureVisualRect(sideShadeLeft, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(12f, 0f), new Vector2(28f, -70f));
+        Image sideShadeLeftImage = GetOrAddComponent<Image>(sideShadeLeft.gameObject);
+        sideShadeLeftImage.color = new Color(0.34f, 0.23f, 0.11f, 0.08f);
+        sideShadeLeftImage.raycastTarget = false;
+
+        RectTransform sideShadeRight = EnsureRectTransform(detailCard, "NoteReaderSideShadeRight");
+        ConfigureVisualRect(sideShadeRight, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-12f, 0f), new Vector2(30f, -90f));
+        Image sideShadeRightImage = GetOrAddComponent<Image>(sideShadeRight.gameObject);
+        sideShadeRightImage.color = new Color(0.28f, 0.19f, 0.09f, 0.10f);
+        sideShadeRightImage.raycastTarget = false;
+
+        RectTransform centerCrease = EnsureRectTransform(detailCard, "NoteReaderCenterCrease");
+        ConfigureVisualRect(centerCrease, new Vector2(0.5f, 0f), new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -8f), new Vector2(2f, -142f));
+        Image centerCreaseImage = GetOrAddComponent<Image>(centerCrease.gameObject);
+        centerCreaseImage.color = new Color(0.39f, 0.28f, 0.16f, 0.08f);
+        centerCreaseImage.raycastTarget = false;
+
+        TMP_Text archiveLabel = EnsureText(detailCard, "NoteReaderArchiveLabel");
+        ConfigureTextRect(archiveLabel.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -28f), new Vector2(-120f, 18f));
+        archiveLabel.text = "ARCHIVO RECUPERADO";
+        archiveLabel.fontSize = 13f;
+        archiveLabel.fontStyle = FontStyles.Bold;
+        archiveLabel.characterSpacing = 4.4f;
+        archiveLabel.alignment = TextAlignmentOptions.Center;
+        archiveLabel.color = accentInkColor;
+        archiveLabel.enableWordWrapping = false;
+
+        noteReaderTitle = EnsureText(detailCard, "NoteReaderTitle");
+        ConfigureTextRect(noteReaderTitle.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -70f), new Vector2(-132f, 48f));
+        noteReaderTitle.fontSize = 32f;
+        noteReaderTitle.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
+        noteReaderTitle.alignment = TextAlignmentOptions.Center;
+        noteReaderTitle.color = inkColor;
+        noteReaderTitle.enableWordWrapping = true;
+        noteReaderTitle.characterSpacing = 2f;
+
+        RectTransform divider = EnsureRectTransform(detailCard, "NoteReaderDivider");
+        ConfigureVisualRect(divider, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -118f), new Vector2(-104f, 2f));
+        Image dividerImage = GetOrAddComponent<Image>(divider.gameObject);
+        dividerImage.color = new Color(accentInkColor.r, accentInkColor.g, accentInkColor.b, 0.32f);
+        dividerImage.raycastTarget = false;
+
+        RectTransform closeButtonRect = EnsureRectTransform(detailCard, "NoteReaderCloseButton");
+        ConfigureVisualRect(closeButtonRect, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-18f, -18f), new Vector2(34f, 34f));
+        Image closeButtonImage = GetOrAddComponent<Image>(closeButtonRect.gameObject);
+        closeButtonImage.color = new Color(0.34f, 0.21f, 0.12f, 0.88f);
+        closeButtonImage.raycastTarget = true;
+
+        Button closeButton = GetOrAddComponent<Button>(closeButtonRect.gameObject);
+        closeButton.targetGraphic = closeButtonImage;
+        closeButton.onClick.RemoveAllListeners();
+        closeButton.onClick.AddListener(CloseNoteReader);
+
+        TMP_Text closeLabel = EnsureText(closeButtonRect, "Label");
+        ConfigureTextRect(closeLabel.rectTransform, Vector2.zero, Vector2.one, new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero);
+        closeLabel.text = "X";
+        closeLabel.fontSize = 20f;
+        closeLabel.fontStyle = FontStyles.Bold;
+        closeLabel.alignment = TextAlignmentOptions.Center;
+        closeLabel.color = new Color(0.95f, 0.91f, 0.83f, 1f);
+        closeLabel.enableWordWrapping = false;
+
+        RectTransform scrollRoot = EnsureRectTransform(detailCard, "NoteReaderScroll");
+        ConfigureVisualRect(scrollRoot, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -18f), new Vector2(-86f, -186f));
+        noteReaderScrollRect = GetOrAddComponent<ScrollRect>(scrollRoot.gameObject);
+        noteReaderScrollRect.horizontal = false;
+        noteReaderScrollRect.movementType = ScrollRect.MovementType.Clamped;
+        noteReaderScrollRect.scrollSensitivity = 24f;
+
+        RectTransform viewport = EnsureRectTransform(scrollRoot, "Viewport");
+        StretchRect(viewport);
+        Image viewportImage = GetOrAddComponent<Image>(viewport.gameObject);
+        viewportImage.color = new Color(1f, 1f, 1f, 0.01f);
+        viewportImage.raycastTarget = true;
+        Mask viewportMask = GetOrAddComponent<Mask>(viewport.gameObject);
+        viewportMask.showMaskGraphic = false;
+
+        RectTransform content = EnsureRectTransform(viewport, "Content");
+        content.anchorMin = new Vector2(0f, 1f);
+        content.anchorMax = new Vector2(1f, 1f);
+        content.pivot = new Vector2(0.5f, 1f);
+        content.anchoredPosition = Vector2.zero;
+        content.sizeDelta = new Vector2(-18f, 0f);
+
+        VerticalLayoutGroup contentLayout = GetOrAddComponent<VerticalLayoutGroup>(content.gameObject);
+        contentLayout.childAlignment = TextAnchor.UpperLeft;
+        contentLayout.childForceExpandWidth = true;
+        contentLayout.childForceExpandHeight = false;
+        contentLayout.childControlWidth = true;
+        contentLayout.childControlHeight = true;
+        contentLayout.padding = new RectOffset(0, 0, 0, 8);
+        contentLayout.spacing = 0;
+
+        ContentSizeFitter contentSizeFitter = GetOrAddComponent<ContentSizeFitter>(content.gameObject);
+        contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        noteReaderBody = EnsureText(content, "Body");
+        noteReaderBody.rectTransform.anchorMin = new Vector2(0f, 1f);
+        noteReaderBody.rectTransform.anchorMax = new Vector2(1f, 1f);
+        noteReaderBody.rectTransform.pivot = new Vector2(0.5f, 1f);
+        noteReaderBody.rectTransform.anchoredPosition = Vector2.zero;
+        noteReaderBody.rectTransform.sizeDelta = new Vector2(0f, 0f);
+        noteReaderBody.fontSize = 20f;
+        noteReaderBody.fontStyle = FontStyles.Normal;
+        noteReaderBody.alignment = TextAlignmentOptions.TopLeft;
+        noteReaderBody.color = inkColor;
+        noteReaderBody.enableWordWrapping = true;
+        noteReaderBody.overflowMode = TextOverflowModes.Overflow;
+        noteReaderBody.characterSpacing = 0.45f;
+        noteReaderBody.lineSpacing = 12f;
+        noteReaderBody.paragraphSpacing = 14f;
+        noteReaderBody.margin = new Vector4(26f, 18f, 32f, 28f);
+
+        noteReaderBodyLayoutElement = GetOrAddComponent<LayoutElement>(noteReaderBody.gameObject);
+        noteReaderBodyLayoutElement.minHeight = 0f;
+        noteReaderBodyLayoutElement.flexibleHeight = 0f;
+
+        RectTransform scrollbarRect = EnsureRectTransform(scrollRoot, "Scrollbar");
+        ConfigureVisualRect(scrollbarRect, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(-8f, 0f), new Vector2(14f, -8f));
+        Image scrollbarTrack = GetOrAddComponent<Image>(scrollbarRect.gameObject);
+        scrollbarTrack.color = new Color(0.28f, 0.20f, 0.11f, 0.18f);
+        scrollbarTrack.raycastTarget = true;
+
+        RectTransform slidingArea = EnsureRectTransform(scrollbarRect, "SlidingArea");
+        StretchRect(slidingArea);
+        slidingArea.offsetMin = new Vector2(0f, 8f);
+        slidingArea.offsetMax = new Vector2(0f, -8f);
+
+        RectTransform handleRect = EnsureRectTransform(slidingArea, "Handle");
+        ConfigureVisualRect(handleRect, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(0f, 72f));
+        Image handleImage = GetOrAddComponent<Image>(handleRect.gameObject);
+        handleImage.color = new Color(0.42f, 0.28f, 0.15f, 0.88f);
+        handleImage.raycastTarget = true;
+
+        Scrollbar scrollbar = GetOrAddComponent<Scrollbar>(scrollbarRect.gameObject);
+        scrollbar.direction = Scrollbar.Direction.BottomToTop;
+        scrollbar.handleRect = handleRect;
+        scrollbar.targetGraphic = handleImage;
+        scrollbar.size = 0.25f;
+
+        noteReaderScrollRect.viewport = viewport;
+        noteReaderScrollRect.content = content;
+        noteReaderScrollRect.verticalScrollbar = scrollbar;
+        noteReaderScrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
+        noteReaderScrollRect.horizontalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+
+        noteReaderOverlay.SetActive(false);
+    }
+
+    private void OpenNoteReader(InventoryManager.NoteSnapshot note)
+    {
+        if (noteReaderOverlay == null)
+        {
+            BuildNoteReaderOverlay();
+        }
+
+        if (noteReaderOverlay == null || noteReaderTitle == null || noteReaderBody == null)
+        {
+            return;
+        }
+
+        noteReaderTitle.text = note.DisplayName;
+        noteReaderBody.text = note.FullText;
+        noteReaderOverlay.SetActive(true);
+        noteReaderOverlay.transform.SetAsLastSibling();
+        RefreshNoteReaderLayout();
+        Canvas.ForceUpdateCanvases();
+        if (noteReaderScrollRect != null)
+        {
+            noteReaderScrollRect.verticalNormalizedPosition = 1f;
+        }
+    }
+
+    private void CloseNoteReader()
+    {
+        if (noteReaderOverlay != null)
+        {
+            noteReaderOverlay.SetActive(false);
+        }
+    }
+
+    private void RefreshNoteReaderLayout()
+    {
+        if (noteReaderBody == null || noteReaderBodyLayoutElement == null)
+        {
+            return;
+        }
+
+        Canvas.ForceUpdateCanvases();
+
+        RectTransform bodyRect = noteReaderBody.rectTransform;
+        float availableWidth = Mathf.Max(260f, bodyRect.rect.width - noteReaderBody.margin.x - noteReaderBody.margin.z);
+        float preferredHeight = noteReaderBody.GetPreferredValues(noteReaderBody.text, availableWidth, 0f).y + noteReaderBody.margin.y + noteReaderBody.margin.w + 20f;
+
+        noteReaderBodyLayoutElement.preferredHeight = Mathf.Max(340f, preferredHeight);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(bodyRect);
+
+        if (noteReaderScrollRect != null && noteReaderScrollRect.content != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(noteReaderScrollRect.content);
+        }
+    }
+
     private void StyleSlotChrome(RectTransform slotRoot, Image background, Image accent, Image badgeBackground, TMP_Text badgeText, TMP_Text indexText)
     {
         if (background == null)
@@ -810,7 +1225,7 @@ public class NotesMenuUI : MonoBehaviour
         }
 
         background.color = pendingSlotColor;
-        background.raycastTarget = false;
+        background.raycastTarget = true;
 
         Outline outline = GetOrAddComponent<Outline>(slotRoot.gameObject);
         outline.effectColor = slotBorderColor;
@@ -841,6 +1256,30 @@ public class NotesMenuUI : MonoBehaviour
         indexText.characterSpacing = 2f;
         indexText.alignment = TextAlignmentOptions.Right;
         indexText.enableWordWrapping = false;
+    }
+
+    private void ConfigureSlotButton(Button button, Image background, int slotIndex)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        button.targetGraphic = background;
+        button.transition = Selectable.Transition.ColorTint;
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, 1f, 1f, 0.95f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.pressedColor = new Color(0.92f, 0.92f, 0.92f, 0.9f);
+        colors.disabledColor = new Color(1f, 1f, 1f, 0.5f);
+        colors.fadeDuration = 0.08f;
+        button.colors = colors;
+
+        button.onClick.RemoveAllListeners();
+        int capturedIndex = slotIndex;
+        button.onClick.AddListener(() => OnNoteSlotClicked(capturedIndex));
     }
 
     private void ConfigureSlotText(TMP_Text text, float left, float top, float right, float bottom, float fontSize, FontStyles style, Color color)
@@ -952,10 +1391,11 @@ public class NotesMenuUI : MonoBehaviour
         public readonly TMP_Text IndexText;
         public readonly TMP_Text Title;
         public readonly TMP_Text Status;
+        public readonly Button Button;
         public readonly Vector2 OriginalAnchoredPosition;
         public readonly Vector2 OriginalSizeDelta;
 
-        public NoteSlotView(int slotNumber, RectTransform root, Image background, Image accent, Image badgeBackground, TMP_Text badgeText, TMP_Text indexText, TMP_Text title, TMP_Text status, Vector2 originalAnchoredPosition, Vector2 originalSizeDelta)
+        public NoteSlotView(int slotNumber, RectTransform root, Image background, Image accent, Image badgeBackground, TMP_Text badgeText, TMP_Text indexText, TMP_Text title, TMP_Text status, Button button, Vector2 originalAnchoredPosition, Vector2 originalSizeDelta)
         {
             SlotNumber = slotNumber;
             Root = root;
@@ -966,8 +1406,25 @@ public class NotesMenuUI : MonoBehaviour
             IndexText = indexText;
             Title = title;
             Status = status;
+            Button = button;
             OriginalAnchoredPosition = originalAnchoredPosition;
             OriginalSizeDelta = originalSizeDelta;
+        }
+    }
+
+    private struct PageTabView
+    {
+        public readonly RectTransform Root;
+        public readonly Image Background;
+        public readonly TMP_Text Label;
+        public readonly Button Button;
+
+        public PageTabView(RectTransform root, Image background, TMP_Text label, Button button)
+        {
+            Root = root;
+            Background = background;
+            Label = label;
+            Button = button;
         }
     }
 }
