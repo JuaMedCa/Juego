@@ -82,6 +82,26 @@ public class ObjectiveSystem : MonoBehaviour
         RefreshObjectiveText();
     }
 
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
+        }
+    }
+
+    public void ResetState()
+    {
+        collectedFuelIds.Clear();
+        readNoteIds.Clear();
+        mapCollected = false;
+        houseObjectiveUnlocked = false;
+        returnObjectiveUnlocked = false;
+        hudUnlocked = false;
+        hudRequestedVisible = true;
+        RefreshObjectiveText();
+    }
+
     public void RegisterFuelPickup(string fuelId)
     {
         string normalizedId = NormalizeId(fuelId);

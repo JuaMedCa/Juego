@@ -164,8 +164,15 @@ public class PickupSystem : MonoBehaviour
 
         if (useMessageSystem && MessageSystem.instance != null)
         {
-            int newCount = InventoryManager.Instance.GetItemCount(item.ItemId);
-            MessageSystem.instance.ShowMessage($"{item.DisplayName} x{newCount}", pickupMessageDuration);
+            if (item.IsFuelPickup && GameplayRunState.TryConsumeFirstFuelThought())
+            {
+                MessageSystem.instance.ShowTypewriterMessage("Deberia haber mas por aqui...", 3.2f, 0.024f);
+            }
+            else
+            {
+                int newCount = InventoryManager.Instance.GetItemCount(item.ItemId);
+                MessageSystem.instance.ShowMessage($"{item.DisplayName} x{newCount}", pickupMessageDuration);
+            }
         }
 
         nearbyItems.Remove(item);

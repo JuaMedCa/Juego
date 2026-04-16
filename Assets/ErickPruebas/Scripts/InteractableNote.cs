@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -5,6 +6,8 @@ using UnityEngine.Serialization;
 
 public class InteractableNote : MonoBehaviour
 {
+    public static event Action<InteractableNote> NoteCollected;
+
     [Header("Identidad")]
     [SerializeField] private string noteId;
     [SerializeField] private string displayName;
@@ -62,7 +65,18 @@ public class InteractableNote : MonoBehaviour
 
     public bool MarkAsCollected()
     {
-        return InventoryManager.EnsureInstance().DiscoverNote(NoteId, DisplayName, PreviewText, FullText);
+        bool wasCollectedNow = InventoryManager.EnsureInstance().DiscoverNote(NoteId, DisplayName, PreviewText, FullText);
+        if (wasCollectedNow)
+        {
+            NoteCollected?.Invoke(this);
+
+            if (GameplayRunState.TryConsumeNotesTabHint() && MessageSystem.instance != null)
+            {
+                MessageSystem.instance.ShowTypewriterMessage("Presiona TAB para abrir las notas.", 3f, 0.02f);
+            }
+        }
+
+        return wasCollectedNow;
     }
 
     void OnTriggerEnter(Collider other)
@@ -94,6 +108,11 @@ public class InteractableNote : MonoBehaviour
 
     private string ResolveDisplayName()
     {
+        if (TryGetNoteNumber(out int noteNumber))
+        {
+            return $"Documento {noteNumber}";
+        }
+
         if (!string.IsNullOrWhiteSpace(displayName))
         {
             return displayName.Trim();
@@ -121,6 +140,11 @@ public class InteractableNote : MonoBehaviour
 
     private string ResolvePreviewText()
     {
+        if (TryGetNoteMetadata(out string generatedPreview))
+        {
+            return generatedPreview;
+        }
+
         if (noteData == null)
         {
             return "Pendiente por inspeccionar";
@@ -198,6 +222,53 @@ public class InteractableNote : MonoBehaviour
         }
 
         return digits.ToString();
+    }
+
+    private bool TryGetNoteNumber(out int noteNumber)
+    {
+        noteNumber = 0;
+
+        string[] candidates =
+        {
+            gameObject.name,
+            noteId,
+            displayName,
+            noteData != null ? noteData.title : string.Empty
+        };
+
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            string digits = ExtractTrailingDigits(candidates[i]);
+            if (int.TryParse(digits, out noteNumber) && noteNumber > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool TryGetNoteMetadata(out string previewText)
+    {
+        previewText = string.Empty;
+        if (!TryGetNoteNumber(out int noteNumber))
+        {
+            return false;
+        }
+
+        previewText = noteNumber switch
+        {
+            1 => "La primera pista apunta hacia la gasolinera abandonada.",
+            2 => "El libro sellado deja claro que algo desperto en la casa.",
+            3 => "Otra nota insiste en revisar el cuarto del fondo con cuidado.",
+            4 => "Las marcas del interior revelan un recorrido mas profundo.",
+            5 => "Las hojas sueltas senalan un escondite aun mas adentro.",
+            6 => "El penultimo documento habla de la salida y del auto.",
+            7 => "La nota final confirma que es hora de volver al jeep.",
+            _ => $"Fragmento clave del Documento {noteNumber}."
+        };
+
+        return true;
     }
 
     private static string BuildShortPreview(string sourceText, int maxWords)

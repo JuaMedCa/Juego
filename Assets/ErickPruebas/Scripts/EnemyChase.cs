@@ -19,8 +19,18 @@ public class EnemyChase : MonoBehaviour
     [SerializeField] private float loseDistance = 20f;
     [SerializeField] private float loseSightDelay = 2f;
     [SerializeField] private float chaseSpeed = 4f;
+    [SerializeField] private float catchUpSpeed = 6.4f;
+    [SerializeField] private float catchUpDistance = 24f;
+    [SerializeField] private float catchUpReleaseDistance = 12f;
     [SerializeField] private float patrolSpeed = 2f;
     [SerializeField] private float chaseRefreshInterval = 0.15f;
+
+    [Header("Recuperacion")]
+    [SerializeField] private float stuckDetectionDelay = 0.85f;
+    [SerializeField] private float stuckMovementThreshold = 0.12f;
+    [SerializeField] private float stuckRemainingDistanceThreshold = 0.75f;
+    [SerializeField] private float recoveryWarpRadius = 1.25f;
+    [SerializeField] private float recoveryDestinationSampleRadius = 3.5f;
 
     [Header("Animacion")]
     [SerializeField] private string animatorSpeedParameter = "Speed";
@@ -34,8 +44,10 @@ public class EnemyChase : MonoBehaviour
     [SerializeField] private AudioClip[] patrolAudioClips = new AudioClip[2];
     [SerializeField, Range(0f, 1f)] private float audioVolume = 0.5f;
     [SerializeField] private float audioMinDistance = 2f;
-    [SerializeField] private float audioMaxDistance = 22f;
+    [SerializeField] private float audioMaxDistance = 28f;
     [SerializeField] private AudioRolloffMode audioRolloffMode = AudioRolloffMode.Logarithmic;
+    [SerializeField, Range(0.5f, 1.5f)] private float closeAudioBoost = 1.15f;
+    [SerializeField, Range(0.1f, 1f)] private float farAudioMultiplier = 0.55f;
 
     private PlayerMovemnt playerScript;
     private NavMeshAgent agent;
@@ -48,6 +60,11 @@ public class EnemyChase : MonoBehaviour
     private bool hasAnimatorSpeedParameter;
     private int nextPatrolClipIndex;
     private EnemyAudioMode currentAudioMode;
+    private Vector3 lastNavigationSamplePosition;
+    private float stuckTimer;
+    private Vector3 currentNavigationTarget;
+    private bool hasNavigationTarget;
+    private bool catchUpSpeedActive;
 
     public bool IsChasing => isChasing;
     public float PatrolSpeed => patrolSpeed;
@@ -77,6 +94,12 @@ public class EnemyChase : MonoBehaviour
 
         ConfigureAudioSource();
         ResolvePlayerReference();
+        ResetNavigationRecovery();
+    }
+
+    private void OnEnable()
+    {
+        ResetNavigationRecovery();
     }
 
     private void Update()
@@ -104,6 +127,7 @@ public class EnemyChase : MonoBehaviour
 
             if (isChasing)
             {
+                UpdateChaseSpeed(distanceToPlayer);
                 chaseRefreshTimer += Time.deltaTime;
                 if (chaseRefreshTimer >= chaseRefreshInterval || !agent.hasPath)
                 {
@@ -118,6 +142,7 @@ public class EnemyChase : MonoBehaviour
             }
         }
 
+        UpdateNavigationRecovery();
         UpdateAnimationState();
         UpdateAudioState();
     }
@@ -276,6 +301,9 @@ public class EnemyChase : MonoBehaviour
             return;
         }
 
+        currentNavigationTarget = targetPosition;
+        hasNavigationTarget = true;
+
         if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, 4f, NavMesh.AllAreas))
         {
             agent.SetDestination(hit.position);
@@ -293,9 +321,15 @@ public class EnemyChase : MonoBehaviour
         }
 
         isChasing = true;
+        catchUpSpeedActive = false;
         agent.speed = chaseSpeed;
         timeWithoutSight = 0f;
         chaseRefreshTimer = chaseRefreshInterval;
+
+        if (GameplayRunState.TryConsumeRunHint() && MessageSystem.instance != null)
+        {
+            MessageSystem.instance.ShowTypewriterMessage("Presiona SHIFT para correr.", 3f, 0.02f);
+        }
 
         Debug.Log("Persiguiendo");
     }
@@ -303,6 +337,7 @@ public class EnemyChase : MonoBehaviour
     private void StopChase()
     {
         isChasing = false;
+        catchUpSpeedActive = false;
         agent.speed = patrolSpeed;
         timeWithoutSight = 0f;
         chaseRefreshTimer = 0f;
@@ -312,7 +347,151 @@ public class EnemyChase : MonoBehaviour
             agent.ResetPath();
         }
 
+        hasNavigationTarget = false;
+        ResetNavigationRecovery();
+
         Debug.Log("Patrullando");
+    }
+
+    private void UpdateNavigationRecovery()
+    {
+        if (agent == null || !agent.isOnNavMesh)
+        {
+            ResetNavigationRecovery();
+            return;
+        }
+
+        if (!agent.hasPath || agent.pathPending)
+        {
+            ResetNavigationRecovery();
+            return;
+        }
+
+        if (agent.remainingDistance <= agent.stoppingDistance + stuckRemainingDistanceThreshold)
+        {
+            ResetNavigationRecovery();
+            return;
+        }
+
+        bool wantsToMove = agent.desiredVelocity.sqrMagnitude > 0.01f;
+        float movedDistance = Vector3.Distance(transform.position, lastNavigationSamplePosition);
+        if (!wantsToMove || movedDistance >= stuckMovementThreshold)
+        {
+            lastNavigationSamplePosition = transform.position;
+            stuckTimer = 0f;
+            return;
+        }
+
+        stuckTimer += Time.deltaTime;
+        if (stuckTimer < stuckDetectionDelay)
+        {
+            return;
+        }
+
+        AttemptNavigationRecovery();
+        lastNavigationSamplePosition = transform.position;
+        stuckTimer = 0f;
+    }
+
+    private void UpdateChaseSpeed(float distanceToPlayer)
+    {
+        if (!isChasing || agent == null)
+        {
+            return;
+        }
+
+        if (!catchUpSpeedActive && distanceToPlayer >= catchUpDistance)
+        {
+            catchUpSpeedActive = true;
+        }
+        else if (catchUpSpeedActive && distanceToPlayer <= catchUpReleaseDistance)
+        {
+            catchUpSpeedActive = false;
+        }
+
+        agent.speed = catchUpSpeedActive ? Mathf.Max(chaseSpeed, catchUpSpeed) : chaseSpeed;
+    }
+
+    private void AttemptNavigationRecovery()
+    {
+        if (agent == null || !agent.isOnNavMesh)
+        {
+            return;
+        }
+
+        if (NavMesh.SamplePosition(transform.position, out NavMeshHit currentHit, recoveryWarpRadius, agent.areaMask))
+        {
+            agent.Warp(currentHit.position);
+        }
+
+        Vector3 desiredTarget = hasNavigationTarget ? currentNavigationTarget : agent.destination;
+        agent.ResetPath();
+
+        if (TryResolveReachableDestination(desiredTarget, out Vector3 resolvedDestination))
+        {
+            agent.SetDestination(resolvedDestination);
+            return;
+        }
+
+        agent.SetDestination(desiredTarget);
+    }
+
+    private bool TryResolveReachableDestination(Vector3 desiredTarget, out Vector3 resolvedDestination)
+    {
+        if (TrySampleReachablePosition(desiredTarget, recoveryDestinationSampleRadius, out resolvedDestination))
+        {
+            return true;
+        }
+
+        float ringRadius = Mathf.Max(1f, recoveryDestinationSampleRadius * 0.55f);
+        for (int i = 0; i < 8; i++)
+        {
+            float angle = (Mathf.PI * 2f * i) / 8f;
+            Vector3 offset = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * ringRadius;
+            if (TrySampleReachablePosition(desiredTarget + offset, recoveryDestinationSampleRadius * 0.5f, out resolvedDestination))
+            {
+                return true;
+            }
+        }
+
+        resolvedDestination = Vector3.zero;
+        return false;
+    }
+
+    private bool TrySampleReachablePosition(Vector3 sampleCenter, float sampleRadius, out Vector3 resolvedDestination)
+    {
+        if (agent != null &&
+            NavMesh.SamplePosition(sampleCenter, out NavMeshHit hit, sampleRadius, agent.areaMask) &&
+            CanReach(hit.position))
+        {
+            resolvedDestination = hit.position;
+            return true;
+        }
+
+        resolvedDestination = Vector3.zero;
+        return false;
+    }
+
+    private bool CanReach(Vector3 destination)
+    {
+        if (agent == null || !agent.isOnNavMesh)
+        {
+            return false;
+        }
+
+        NavMeshPath path = new NavMeshPath();
+        if (!agent.CalculatePath(destination, path))
+        {
+            return false;
+        }
+
+        return path.status == NavMeshPathStatus.PathComplete;
+    }
+
+    private void ResetNavigationRecovery()
+    {
+        lastNavigationSamplePosition = transform.position;
+        stuckTimer = 0f;
     }
 
     private void ConfigureAudioSource()
@@ -325,7 +504,7 @@ public class EnemyChase : MonoBehaviour
         enemyAudioSource.playOnAwake = false;
         enemyAudioSource.loop = false;
         enemyAudioSource.spatialBlend = 1f;
-        enemyAudioSource.spread = 360f;
+        enemyAudioSource.spread = 0f;
         enemyAudioSource.rolloffMode = audioRolloffMode;
         enemyAudioSource.minDistance = Mathf.Max(0.1f, audioMinDistance);
         enemyAudioSource.maxDistance = Mathf.Max(enemyAudioSource.minDistance + 0.1f, audioMaxDistance);
@@ -341,6 +520,7 @@ public class EnemyChase : MonoBehaviour
         }
 
         ConfigureAudioSource();
+        UpdateAudioSpatialization();
 
         EnemyAudioMode desiredMode = DetermineAudioMode();
         if (desiredMode != currentAudioMode)
@@ -356,6 +536,18 @@ public class EnemyChase : MonoBehaviour
         {
             PlayClip(chaseAudioClip, true);
         }
+    }
+
+    private void UpdateAudioSpatialization()
+    {
+        if (enemyAudioSource == null || player == null)
+        {
+            return;
+        }
+
+        float normalizedDistance = Mathf.InverseLerp(audioMinDistance, Mathf.Max(audioMinDistance + 0.1f, audioMaxDistance), Vector3.Distance(transform.position, player.position));
+        float distanceVolumeMultiplier = Mathf.Lerp(closeAudioBoost, farAudioMultiplier, normalizedDistance);
+        enemyAudioSource.volume = Mathf.Clamp01(audioVolume * distanceVolumeMultiplier);
     }
 
     private EnemyAudioMode DetermineAudioMode()
@@ -479,5 +671,7 @@ public class EnemyChase : MonoBehaviour
         {
             enemyAudioSource.Stop();
         }
+
+        ResetNavigationRecovery();
     }
 }

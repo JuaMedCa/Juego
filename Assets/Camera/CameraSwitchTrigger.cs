@@ -13,7 +13,7 @@ public class CameraSwitchTrigger : MonoBehaviour
     public CinemachineVirtualCamera fpsCam;
     public PlayerMovemnt playerMovement;
 
-    private static CameraMode currentMode = CameraMode.Aerea;
+    private static CameraMode currentMode = CameraMode.PrimeraPersona;
     private static int insideTriggerCount = 0;
     private static bool isFpsApplied = false;
     private static bool isMenuOpen = true;
@@ -65,6 +65,15 @@ public class CameraSwitchTrigger : MonoBehaviour
         }
     }
 
+    public static void ResetState()
+    {
+        currentMode = CameraMode.PrimeraPersona;
+        insideTriggerCount = 0;
+        isFpsApplied = false;
+        isMenuOpen = true;
+        activeController = null;
+    }
+
     private void RegisterAsActiveController()
     {
         if (!HasRequiredReferences())
@@ -102,7 +111,7 @@ public class CameraSwitchTrigger : MonoBehaviour
             return;
         }
 
-        bool shouldUseFps = currentMode == CameraMode.PrimeraPersona || insideTriggerCount > 0;
+        bool shouldUseFps = true;
 
         if (shouldUseFps != isFpsApplied)
         {
@@ -124,22 +133,18 @@ public class CameraSwitchTrigger : MonoBehaviour
         }
 
         fpsCam.Priority = 20;
-        isoCam.Priority = 0;
+        if (isoCam != null)
+        {
+            isoCam.Priority = 0;
+        }
+
         playerMovement.EnterFPS();
         return true;
     }
 
     private bool ActivateIsometric()
     {
-        if (!HasRequiredReferences())
-        {
-            return false;
-        }
-
-        isoCam.Priority = 20;
-        fpsCam.Priority = 0;
-        playerMovement.ExitFPS();
-        return true;
+        return ActivateFps();
     }
 
     private void ApplyCursorState()
@@ -151,20 +156,12 @@ public class CameraSwitchTrigger : MonoBehaviour
             return;
         }
 
-        if (isFpsApplied)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private bool HasRequiredReferences()
     {
-        return isoCam != null && fpsCam != null && playerMovement != null;
+        return fpsCam != null && playerMovement != null;
     }
 }

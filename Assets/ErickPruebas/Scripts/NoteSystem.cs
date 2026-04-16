@@ -432,12 +432,7 @@ public class NoteSystem : MonoBehaviour
             return "Documento";
         }
 
-        if (note.noteData == null || string.IsNullOrWhiteSpace(note.noteData.title))
-        {
-            return note.DisplayName;
-        }
-
-        return note.noteData.title.Trim();
+        return note.DisplayName;
     }
 
     private string BuildNoteBody(InteractableNote note)

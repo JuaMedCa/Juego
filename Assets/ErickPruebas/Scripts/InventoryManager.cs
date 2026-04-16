@@ -66,6 +66,18 @@ public class InventoryManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    public void ResetState()
+    {
+        inventory.Clear();
+        itemOrder.Clear();
+        notes.Clear();
+        noteOrder.Clear();
+        TotalScore = 0;
+        TotalItemCount = 0;
+        CollectedNotesCount = 0;
+        InventoryChanged?.Invoke();
+    }
+
     public void AddItem(string itemId, string displayName, int amount, int pointsPerUnit)
     {
         if (string.IsNullOrWhiteSpace(itemId))
