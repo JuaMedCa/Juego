@@ -19,9 +19,9 @@ public class EnemyChase : MonoBehaviour
     [SerializeField] private float loseDistance = 20f;
     [SerializeField] private float loseSightDelay = 2f;
     [SerializeField] private float chaseSpeed = 4f;
-    [SerializeField] private float catchUpSpeed = 6.4f;
-    [SerializeField] private float catchUpDistance = 24f;
-    [SerializeField] private float catchUpReleaseDistance = 12f;
+    [SerializeField] private float catchUpSpeed = 7.5f;
+    [SerializeField] private float catchUpDistance = 16f;
+    [SerializeField] private float catchUpReleaseDistance = 9f;
     [SerializeField] private float patrolSpeed = 2f;
     [SerializeField] private float chaseRefreshInterval = 0.15f;
 
@@ -44,10 +44,8 @@ public class EnemyChase : MonoBehaviour
     [SerializeField] private AudioClip[] patrolAudioClips = new AudioClip[2];
     [SerializeField, Range(0f, 1f)] private float audioVolume = 0.5f;
     [SerializeField] private float audioMinDistance = 2f;
-    [SerializeField] private float audioMaxDistance = 28f;
+    [SerializeField] private float audioMaxDistance = 22f;
     [SerializeField] private AudioRolloffMode audioRolloffMode = AudioRolloffMode.Logarithmic;
-    [SerializeField, Range(0.5f, 1.5f)] private float closeAudioBoost = 1.15f;
-    [SerializeField, Range(0.1f, 1f)] private float farAudioMultiplier = 0.55f;
 
     private PlayerMovemnt playerScript;
     private NavMeshAgent agent;
@@ -135,7 +133,7 @@ public class EnemyChase : MonoBehaviour
                     SetDestination(player.position);
                 }
 
-                if (distanceToPlayer > loseDistance || timeWithoutSight >= loseSightDelay)
+                if (distanceToPlayer > GetEffectiveLoseDistance() || timeWithoutSight >= loseSightDelay)
                 {
                     StopChase();
                 }
@@ -326,9 +324,9 @@ public class EnemyChase : MonoBehaviour
         timeWithoutSight = 0f;
         chaseRefreshTimer = chaseRefreshInterval;
 
-        if (GameplayRunState.TryConsumeRunHint() && MessageSystem.instance != null)
+        if (GameplayRunState.TryConsumeRunHint())
         {
-            MessageSystem.instance.ShowTypewriterMessage("Presiona SHIFT para correr.", 3f, 0.02f);
+            TutorialHintOverlay.ShowHint("Presiona SHIFT para correr.", 3f);
         }
 
         Debug.Log("Persiguiendo");
@@ -400,16 +398,29 @@ public class EnemyChase : MonoBehaviour
             return;
         }
 
-        if (!catchUpSpeedActive && distanceToPlayer >= catchUpDistance)
+        float effectiveCatchUpDistance = GetEffectiveCatchUpDistance();
+        float effectiveReleaseDistance = Mathf.Min(catchUpReleaseDistance, Mathf.Max(2f, effectiveCatchUpDistance - 3f));
+
+        if (!catchUpSpeedActive && distanceToPlayer >= effectiveCatchUpDistance)
         {
             catchUpSpeedActive = true;
         }
-        else if (catchUpSpeedActive && distanceToPlayer <= catchUpReleaseDistance)
+        else if (catchUpSpeedActive && distanceToPlayer <= effectiveReleaseDistance)
         {
             catchUpSpeedActive = false;
         }
 
         agent.speed = catchUpSpeedActive ? Mathf.Max(chaseSpeed, catchUpSpeed) : chaseSpeed;
+    }
+
+    private float GetEffectiveCatchUpDistance()
+    {
+        return Mathf.Min(Mathf.Max(8f, catchUpDistance), Mathf.Max(8f, loseDistance - 4f));
+    }
+
+    private float GetEffectiveLoseDistance()
+    {
+        return Mathf.Max(loseDistance, GetEffectiveCatchUpDistance() + 8f);
     }
 
     private void AttemptNavigationRecovery()
@@ -504,7 +515,7 @@ public class EnemyChase : MonoBehaviour
         enemyAudioSource.playOnAwake = false;
         enemyAudioSource.loop = false;
         enemyAudioSource.spatialBlend = 1f;
-        enemyAudioSource.spread = 0f;
+        enemyAudioSource.spread = 360f;
         enemyAudioSource.rolloffMode = audioRolloffMode;
         enemyAudioSource.minDistance = Mathf.Max(0.1f, audioMinDistance);
         enemyAudioSource.maxDistance = Mathf.Max(enemyAudioSource.minDistance + 0.1f, audioMaxDistance);
@@ -520,7 +531,6 @@ public class EnemyChase : MonoBehaviour
         }
 
         ConfigureAudioSource();
-        UpdateAudioSpatialization();
 
         EnemyAudioMode desiredMode = DetermineAudioMode();
         if (desiredMode != currentAudioMode)
@@ -536,18 +546,6 @@ public class EnemyChase : MonoBehaviour
         {
             PlayClip(chaseAudioClip, true);
         }
-    }
-
-    private void UpdateAudioSpatialization()
-    {
-        if (enemyAudioSource == null || player == null)
-        {
-            return;
-        }
-
-        float normalizedDistance = Mathf.InverseLerp(audioMinDistance, Mathf.Max(audioMinDistance + 0.1f, audioMaxDistance), Vector3.Distance(transform.position, player.position));
-        float distanceVolumeMultiplier = Mathf.Lerp(closeAudioBoost, farAudioMultiplier, normalizedDistance);
-        enemyAudioSource.volume = Mathf.Clamp01(audioVolume * distanceVolumeMultiplier);
     }
 
     private EnemyAudioMode DetermineAudioMode()

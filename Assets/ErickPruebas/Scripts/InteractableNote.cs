@@ -70,9 +70,14 @@ public class InteractableNote : MonoBehaviour
         {
             NoteCollected?.Invoke(this);
 
-            if (GameplayRunState.TryConsumeNotesTabHint() && MessageSystem.instance != null)
+            if (GameplayRunState.TryConsumeNotesTabHint())
             {
-                MessageSystem.instance.ShowTypewriterMessage("Presiona TAB para abrir las notas.", 3f, 0.02f);
+                TutorialHintOverlay.ShowHint("Presiona TAB para abrir las notas.", 3f);
+            }
+
+            if (ShouldShowReturnToCarHint())
+            {
+                TutorialHintOverlay.ShowHint("Ahi viene... debo volver a mi auto ahora!", 4f);
             }
         }
 
@@ -140,7 +145,7 @@ public class InteractableNote : MonoBehaviour
 
     private string ResolvePreviewText()
     {
-        if (TryGetNoteMetadata(out string generatedPreview))
+        if (TryGetMappedNoteContent(out string generatedPreview, out _))
         {
             return generatedPreview;
         }
@@ -164,6 +169,11 @@ public class InteractableNote : MonoBehaviour
 
     private string ResolveFullText()
     {
+        if (TryGetMappedNoteContent(out _, out string generatedFullText))
+        {
+            return generatedFullText;
+        }
+
         if (noteData == null || string.IsNullOrWhiteSpace(noteData.noteText))
         {
             return "Sin contenido";
@@ -248,27 +258,65 @@ public class InteractableNote : MonoBehaviour
         return false;
     }
 
-    private bool TryGetNoteMetadata(out string previewText)
+    private bool TryGetMappedNoteContent(out string previewText, out string fullText)
     {
         previewText = string.Empty;
+        fullText = string.Empty;
         if (!TryGetNoteNumber(out int noteNumber))
         {
             return false;
         }
 
-        previewText = noteNumber switch
+        switch (noteNumber)
         {
-            1 => "La primera pista apunta hacia la gasolinera abandonada.",
-            2 => "El libro sellado deja claro que algo desperto en la casa.",
-            3 => "Otra nota insiste en revisar el cuarto del fondo con cuidado.",
-            4 => "Las marcas del interior revelan un recorrido mas profundo.",
-            5 => "Las hojas sueltas senalan un escondite aun mas adentro.",
-            6 => "El penultimo documento habla de la salida y del auto.",
-            7 => "La nota final confirma que es hora de volver al jeep.",
-            _ => $"Fragmento clave del Documento {noteNumber}."
-        };
+            case 1:
+                previewText = "Segui la senal hasta la gasolinera.";
+                fullText = "Tome tu linterna y segui la senal hasta la gasolinera vieja. Escuche mi nombre viniendo desde la casa del camino, como si alguien me imitara en la oscuridad. Si lees esto, no me busques por la carretera principal; entra a la casa con cuidado y revisa el cuarto del fondo.";
+                return true;
+            case 2:
+                previewText = "La casa no estaba abandonada.";
+                fullText = "La casa tiene marcas frescas en las paredes y un olor a agua podrida. No estoy sola aqui. En una mesa encontre dibujos de una torre, bidones rojos y una flecha apuntando al norte. Voy a seguir ese rastro antes de que anochezca.";
+                return true;
+            case 3:
+                previewText = "La torre revela el camino norte.";
+                fullText = "Desde la torre pude verlo por fin: algo enorme rondando el canal, arrastrando sacos hacia una cerca oxidada. Tambien vi huellas recientes junto a varios bidones. Si vas detras de mi, no sigas el barro; busca la reja del taller y manten la luz apagada.";
+                return true;
+            case 4:
+                previewText = "El jeep todavia podria arrancar.";
+                fullText = "Los bidones no son para un incendio. Los estan guardando para un jeep militar escondido tras la reja. Escuche a dos hombres decir que moveran 'a la chica' antes del amanecer. Si encuentras suficiente gasolina, ese jeep aun podria sacarte de aqui.";
+                return true;
+            case 5:
+                previewText = "Mencionaron un paradero oculto.";
+                fullText = "Oi la palabra 'paradero' varias veces mientras discutian junto al mapa. No se referian a la carretera, sino a un escondite detras del camino hundido. Si sigues buscando, no confies en las voces. Algo aqui aprende rapido a sonar como nosotros.";
+                return true;
+            case 6:
+                previewText = "Bajo el paradero oi tuberias.";
+                fullText = "Llegue al paradero y solo encontre libros mojados, sangre seca y una escotilla abierta. Debajo escuche tuberias que regresan hacia la gasolinera. Si lees esto, aun estoy cerca. Sigue el ruido del agua antes de que vuelvan por mi.";
+                return true;
+            case 7:
+                previewText = "Estoy bajo la gasolinera.";
+                fullText = "Me movieron al pozo de drenaje bajo la gasolinera. El monstruo vigila la entrada y no creo poder salir sola. Si no puedes bajar por mi, huye en el jeep, regresa armado y no olvides este lugar. Todavia sigo aqui.";
+                return true;
+            default:
+                previewText = $"Fragmento clave del Documento {noteNumber}.";
+                fullText = previewText;
+                return true;
+        }
+    }
 
-        return true;
+    private bool ShouldShowReturnToCarHint()
+    {
+        bool isCubeSeven = gameObject.name.IndexOf("Cube7", StringComparison.OrdinalIgnoreCase) >= 0;
+        bool isFinalCollectedNote = InventoryManager.HasInstance
+            && InventoryManager.Instance.TotalRegisteredNotes > 0
+            && InventoryManager.Instance.CollectedNotesCount >= InventoryManager.Instance.TotalRegisteredNotes;
+
+        if (!isCubeSeven && !isFinalCollectedNote)
+        {
+            return false;
+        }
+
+        return GameplayRunState.TryConsumeReturnToCarHint();
     }
 
     private static string BuildShortPreview(string sourceText, int maxWords)

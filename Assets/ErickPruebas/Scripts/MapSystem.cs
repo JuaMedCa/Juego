@@ -13,6 +13,8 @@ public class MapSystem : MonoBehaviour
     [SerializeField] private int mapPoints = 0;
     [SerializeField] private float pickupMessageDuration = 1.5f;
     [SerializeField] private float tutorialMessageDuration = 3f;
+    [SerializeField] private bool freezeGameWhenMapOpen = true;
+    [SerializeField] private bool showCursorWhenMapOpen = false;
 
     private MapPickup currentMap;
     private bool hasMap = false;
@@ -82,16 +84,13 @@ public class MapSystem : MonoBehaviour
         InventoryManager.EnsureInstance().AddItem(mapItemId, mapDisplayName, 1, mapPoints);
         ObjectiveSystem.Instance.RegisterMapPickup();
 
-        if (MessageSystem.instance != null)
+        if (GameplayRunState.TryConsumeMapPickupHint())
         {
-            if (GameplayRunState.TryConsumeMapPickupHint())
-            {
-                MessageSystem.instance.ShowTypewriterMessage("Presiona M para abrir el mapa.", tutorialMessageDuration, 0.02f);
-            }
-            else
-            {
-                MessageSystem.instance.ShowMessage(mapDisplayName + " obtenido", pickupMessageDuration);
-            }
+            TutorialHintOverlay.ShowHint("Presiona M para abrir el mapa.", tutorialMessageDuration);
+        }
+        else if (MessageSystem.instance != null)
+        {
+            MessageSystem.instance.ShowMessage(mapDisplayName + " obtenido", pickupMessageDuration);
         }
 
         Destroy(currentMap.gameObject);
@@ -107,8 +106,15 @@ public class MapSystem : MonoBehaviour
         mapPanel.SetActive(mapOpen);
         ApplyMapCameraState();
 
-        Cursor.lockState = mapOpen ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible = mapOpen;
+        if (freezeGameWhenMapOpen)
+        {
+            Time.timeScale = mapOpen ? 0f : 1f;
+        }
+
+        Cursor.lockState = showCursorWhenMapOpen
+            ? (mapOpen ? CursorLockMode.None : CursorLockMode.Locked)
+            : CursorLockMode.Locked;
+        Cursor.visible = showCursorWhenMapOpen && mapOpen;
 
         if (mapOpen)
         {
@@ -116,9 +122,9 @@ public class MapSystem : MonoBehaviour
             return;
         }
 
-        if (GameplayRunState.TryConsumeFirstMapCloseInsight() && MessageSystem.instance != null)
+        if (GameplayRunState.TryConsumeFirstMapCloseInsight())
         {
-            MessageSystem.instance.ShowTypewriterMessage("Los puntos rosas del mapa parecen marcar los otros bidones.", 3.4f, 0.022f);
+            TutorialHintOverlay.ShowHint("Los puntos rosas del mapa parecen marcar los otros bidones.", 3.4f);
         }
     }
 
