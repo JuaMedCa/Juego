@@ -233,6 +233,21 @@ public class MainMenuController : MonoBehaviour
 
     void StartGame()
     {
+        if (!hasStartedGame)
+        {
+            StartIntroSequenceController introController = StartIntroSequenceController.GetOrCreate();
+            if (introController != null && introController.TryPlay(BeginGameplay))
+            {
+                SetMenuMusicPlaying(false);
+                return;
+            }
+        }
+
+        BeginGameplay();
+    }
+
+    void BeginGameplay()
+    {
         hasStartedGame = true;
         RefreshPlayButtonLabel();
         RefreshMenuVisualState();

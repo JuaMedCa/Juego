@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d158712c1f24fb8a3b87a787d48f311, type: 3}
+  m_Name: FinishEndingSequence
+  m_EditorClassIdentifier: 
+  slideTextures:
+  - {fileID: 2800000, guid: 9cebe0aa4000c854291a345998a767cb, type: 3}
+  - {fileID: 2800000, guid: 89edbb6346801f749bbb5dec6e50d554, type: 3}
+  narrationClips:
+  - {fileID: 8300000, guid: f7568681bbd9cb34b89b2ec50faa22fb, type: 3}
+  - {fileID: 8300000, guid: 5a96ac8d24d307642ae1a7252f1974fd, type: 3}
+  subtitles:
+  - "Esa cosa casi me atrapa. Sera mejor que me vaya de aqui. No he encontrado ni rastro de mi hermana. Animo, te encontrare."
+  - 
+  narrationVolumes:
+  - 1
+  - 0.5
+  fadeDuration: 0.45
+  fallbackStepDuration: 3.5
+  betweenSlidesDelay: 0.2
+  backdropColor: {r: 0, g: 0, b: 0, a: 1}
+  introCameraPosition: {x: 20000, y: 20000, z: 20000}

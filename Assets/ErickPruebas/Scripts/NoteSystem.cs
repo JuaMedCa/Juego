@@ -120,6 +120,11 @@ public class NoteSystem : MonoBehaviour
         {
             notePanel.SetActive(false);
         }
+
+        if (TryPlayClosingVideo(note))
+        {
+            return;
+        }
     }
 
     void CloseNote()

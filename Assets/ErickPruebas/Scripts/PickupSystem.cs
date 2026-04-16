@@ -182,7 +182,6 @@ public class PickupSystem : MonoBehaviour
 
         Destroy(item.gameObject);
     }
-
     private void ShowInteractText(string message)
     {
         if (interactText == null)

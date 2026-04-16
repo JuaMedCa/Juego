@@ -14,6 +14,20 @@ public class MessageSystem : MonoBehaviour
     void Awake()
     {
         instance = this;
+        ResolveMessageText();
+    }
+
+    private void OnEnable()
+    {
+        ResolveMessageText();
+    }
+
+    private void OnDestroy()
+    {
+        if (instance == this)
+        {
+            instance = null;
+        }
     }
 
     public void ShowMessage(string message, float duration)
@@ -39,42 +53,100 @@ public class MessageSystem : MonoBehaviour
 
     private IEnumerator Show(string msg, float time)
     {
-        if (messageText == null)
+        if (!TryGetMessageText(out TMP_Text target))
         {
             yield break;
         }
 
-        messageText.text = msg;
-        messageText.maxVisibleCharacters = int.MaxValue;
-        messageText.gameObject.SetActive(true);
+        target.text = msg ?? string.Empty;
+        target.maxVisibleCharacters = int.MaxValue;
+        target.gameObject.SetActive(true);
 
         yield return new WaitForSeconds(time);
 
-        messageText.gameObject.SetActive(false);
+        if (target != null)
+        {
+            target.gameObject.SetActive(false);
+        }
+
+        currentMessage = null;
     }
 
     private IEnumerator ShowTypewriter(string msg, float time, float characterDelay)
     {
-        if (messageText == null)
+        if (!TryGetMessageText(out TMP_Text target))
         {
             yield break;
         }
 
-        messageText.text = msg;
-        messageText.maxVisibleCharacters = 0;
-        messageText.gameObject.SetActive(true);
-        messageText.ForceMeshUpdate();
+        target.text = msg ?? string.Empty;
+        target.maxVisibleCharacters = 0;
+        target.gameObject.SetActive(true);
 
-        int totalCharacters = messageText.textInfo.characterCount;
+        // Let TMP initialize after enabling the object before we read textInfo.
+        yield return null;
+
+        if (target == null)
+        {
+            currentMessage = null;
+            yield break;
+        }
+
+        target.ForceMeshUpdate();
+
+        if (target.textInfo == null)
+        {
+            currentMessage = StartCoroutine(Show(msg, time));
+            yield break;
+        }
+
+        int totalCharacters = target.textInfo.characterCount;
         for (int visibleCharacters = 1; visibleCharacters <= totalCharacters; visibleCharacters++)
         {
-            messageText.maxVisibleCharacters = visibleCharacters;
+            if (target == null)
+            {
+                currentMessage = null;
+                yield break;
+            }
+
+            target.maxVisibleCharacters = visibleCharacters;
             yield return new WaitForSeconds(characterDelay);
         }
 
         yield return new WaitForSeconds(time);
 
-        messageText.maxVisibleCharacters = int.MaxValue;
-        messageText.gameObject.SetActive(false);
+        if (target != null)
+        {
+            target.maxVisibleCharacters = int.MaxValue;
+            target.gameObject.SetActive(false);
+        }
+
+        currentMessage = null;
+    }
+
+    private bool TryGetMessageText(out TMP_Text target)
+    {
+        target = ResolveMessageText();
+        return target != null;
+    }
+
+    private TMP_Text ResolveMessageText()
+    {
+        if (messageText != null)
+        {
+            return messageText;
+        }
+
+        TMP_Text[] textObjects = FindObjectsOfType<TMP_Text>(true);
+        for (int i = 0; i < textObjects.Length; i++)
+        {
+            if (textObjects[i] != null && textObjects[i].name == "MessageText")
+            {
+                messageText = textObjects[i];
+                break;
+            }
+        }
+
+        return messageText;
     }
 }
