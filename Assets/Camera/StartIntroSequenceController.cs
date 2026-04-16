@@ -155,9 +155,9 @@ public class StartIntroSequenceController : MonoBehaviour
         skipPanelRect.anchorMax = new Vector2(1f, 0f);
         skipPanelRect.pivot = new Vector2(1f, 0f);
         skipPanelRect.anchoredPosition = new Vector2(-42f, 42f);
-        skipPanelRect.sizeDelta = new Vector2(250f, 66f);
+        skipPanelRect.sizeDelta = new Vector2(560f, 74f);
 
-        skipStatusText = CreateText("SkipStatusText", skipPanel.transform, string.Empty, 22, FontStyle.Bold, new Color(1f, 0.9f, 0.6f), TextAnchor.MiddleCenter, new Vector2(0f, -15f), new Vector2(210f, 34f));
+        skipStatusText = CreateText("SkipStatusText", skipPanel.transform, string.Empty, 18, FontStyle.Bold, new Color(1f, 0.9f, 0.6f), TextAnchor.MiddleCenter, new Vector2(0f, -13f), new Vector2(520f, 44f));
 
         UpdateSkipUi();
 
@@ -565,17 +565,17 @@ public class StartIntroSequenceController : MonoBehaviour
 
         if (skipRequested)
         {
-            skipStatusText.text = "SKIP";
+            skipStatusText.text = "Saltando...";
             return;
         }
 
         if (skipHoldProgress > 0f)
         {
-            skipStatusText.text = $"SKIP {skipHoldProgress:0.0}/{SkipHoldDuration:0.0}s";
+            skipStatusText.text = $"Manten presionado ESPACIO para saltar {skipHoldProgress:0.0}/{SkipHoldDuration:0.0}s";
             return;
         }
 
-        skipStatusText.text = $"SKIP 0.0/{SkipHoldDuration:0.0}s";
+        skipStatusText.text = $"Manten presionado ESPACIO para saltar 0.0/{SkipHoldDuration:0.0}s";
     }
 
     Font LoadUiFont()

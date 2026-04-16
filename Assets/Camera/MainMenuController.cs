@@ -82,9 +82,7 @@ public class MainMenuController : MonoBehaviour
     Text qualityValueText;
     Text fullscreenValueText;
     Text vSyncValueText;
-    Text aerialModeButtonText;
     Text firstPersonModeButtonText;
-    Image aerialModeButtonImage;
     Image firstPersonModeButtonImage;
     Slider volumeSlider;
     Slider sensitivitySlider;
@@ -256,13 +254,8 @@ public class MainMenuController : MonoBehaviour
 
     void StartNewGame()
     {
-        SetGamePaused(false);
         SetMenuMusicPlaying(false);
-        Scene activeScene = SceneManager.GetActiveScene();
-        if (!string.IsNullOrEmpty(activeScene.name))
-        {
-            SceneManager.LoadScene(activeScene.name);
-        }
+        GameSessionRestart.RestartCurrentScene();
     }
 
     void SetGamePaused(bool paused)
@@ -307,8 +300,7 @@ public class MainMenuController : MonoBehaviour
         if (qualityValueText != null) qualityValueText.text = QualitySettings.names.Length > 0 ? QualitySettings.names[qualityLevel].ToUpperInvariant() : "N/A";
         if (fullscreenValueText != null) fullscreenValueText.text = fullscreenEnabled ? "PANTALLA COMPLETA" : "VENTANA";
         if (vSyncValueText != null) vSyncValueText.text = vSyncEnabled ? "ACTIVADO" : "DESACTIVADO";
-        RefreshModeButton(aerialModeButtonImage, aerialModeButtonText, CameraSwitchTrigger.CurrentMode == CameraSwitchTrigger.CameraMode.Aerea);
-        RefreshModeButton(firstPersonModeButtonImage, firstPersonModeButtonText, CameraSwitchTrigger.CurrentMode == CameraSwitchTrigger.CameraMode.PrimeraPersona);
+        RefreshModeButton(firstPersonModeButtonImage, firstPersonModeButtonText, true);
     }
 
     void RefreshPlayButtonLabel()
@@ -319,7 +311,7 @@ public class MainMenuController : MonoBehaviour
 
     void ApplyCameraMode(CameraSwitchTrigger.CameraMode mode)
     {
-        CameraSwitchTrigger.SetCameraMode(mode);
+        CameraSwitchTrigger.SetCameraMode(CameraSwitchTrigger.CameraMode.PrimeraPersona);
         RefreshOptionLabels();
     }
 
@@ -410,9 +402,8 @@ public class MainMenuController : MonoBehaviour
         qualityValueText = CreateActionRow(parent, "GRAFICOS", new Vector2(30f, -242f), CycleQuality);
         fullscreenValueText = CreateActionRow(parent, "PANTALLA", new Vector2(30f, -302f), ToggleFullscreen);
         vSyncValueText = CreateActionRow(parent, "VSYNC", new Vector2(30f, -362f), ToggleVSync);
-        CreateLabel(parent, "MODO DE CAMARA", new Vector2(30f, -414f), new Vector2(220f, 28f));
-        CreateModeButton(parent, "AEREA", new Vector2(30f, -452f), new Vector2(174f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.Aerea), out aerialModeButtonImage, out aerialModeButtonText);
-        CreateModeButton(parent, "PRIMERA PERSONA", new Vector2(220f, -452f), new Vector2(220f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.PrimeraPersona), out firstPersonModeButtonImage, out firstPersonModeButtonText);
+        CreateLabel(parent, "CAMARA", new Vector2(30f, -414f), new Vector2(220f, 28f));
+        CreateModeButton(parent, "PRIMERA PERSONA", new Vector2(30f, -452f), new Vector2(410f, 36f), () => ApplyCameraMode(CameraSwitchTrigger.CameraMode.PrimeraPersona), out firstPersonModeButtonImage, out firstPersonModeButtonText);
         CreateButton(parent, "DefaultsButton", new Vector2(30f, -508f), new Vector2(410f, 38f), ResetDefaults);
         CreateText("DefaultsLabel", parent.Find("DefaultsButton"), "RESTAURAR PREDETERMINADOS", 14, FontStyle.Bold, titleColor, TextAnchor.MiddleCenter, Vector2.zero, new Vector2(410f, 38f), false);
     }

@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -18,7 +17,7 @@ public class PlayerMovemnt : MonoBehaviour
     [SerializeField] private KeyCode alternateCrouchKey = KeyCode.LeftControl;
     [SerializeField] private Transform crouchViewTarget;
 
-    [Header("Isometric Rotation")]
+    [Header("Legacy Isometric")]
     public float rotationSpeed = 10f;
 
     [Header("FPS Body Follow Camera")]
@@ -26,7 +25,7 @@ public class PlayerMovemnt : MonoBehaviour
     public float turnDeadZone = 1.5f;
 
     [Header("Mode")]
-    public bool isFPS = false;
+    public bool isFPS = true;
 
     [Tooltip("Asigna aqui el Transform de la Main Camera.")]
     public Transform fpsCamera;
@@ -35,36 +34,40 @@ public class PlayerMovemnt : MonoBehaviour
     public Renderer[] bodyRenderers;
     public bool keepShadows = false;
 
-    [Header("Transition")]
-    public float enterFPSTransitionDuration = 0.8f;
-    public float exitFPSTransitionDuration = 0.6f;
+    [Header("Legacy Transition")]
+    public float enterFPSTransitionDuration = 0f;
+    public float exitFPSTransitionDuration = 0f;
+
+    [Header("Footsteps")]
+    [SerializeField] private AudioClip footstepClip;
+    [SerializeField] private string footstepResourceName = "Taps";
+    [SerializeField] private float walkFootstepInterval = 0.46f;
+    [SerializeField] private float runFootstepInterval = 0.29f;
+    [SerializeField] private float crouchFootstepInterval = 0.64f;
+    [SerializeField, Range(0f, 1f)] private float footstepVolume = 0.22f;
+    [SerializeField, Range(0f, 0.3f)] private float footstepPitchVariance = 0.05f;
 
     private Animator animator;
     private Rigidbody rb;
     private CapsuleCollider capsuleCollider;
     private Transform resolvedCrouchViewTarget;
-
-    private Vector3 forward;
-    private Vector3 right;
+    private AudioSource footstepAudioSource;
     private Vector3 inputDirection;
-
-    private bool isTransitioning = false;
-    private Coroutine transitionCoroutine;
-
     private Quaternion desiredRotation;
-    private bool hasDesiredRotation = false;
-    private bool isRunning = false;
-    private bool isCrouching = false;
+    private bool hasDesiredRotation;
+    private bool isRunning;
+    private bool isCrouching;
     private float standingColliderHeight;
     private Vector3 standingColliderCenter;
     private float standingColliderBottom;
     private Vector3 standingViewTargetLocalPosition;
+    private float footstepTimer;
 
     public bool IsRunning => isRunning;
     public bool IsCrouching => isCrouching;
     public float CurrentMoveSpeed => speed * GetMovementSpeedMultiplier();
 
-    void Start()
+    private void Start()
     {
         animator = GetComponent<Animator>();
         rb = GetComponent<Rigidbody>();
@@ -73,63 +76,52 @@ public class PlayerMovemnt : MonoBehaviour
         ResolveFpsCamera();
         ResolveCrouchViewTarget();
         CacheStandingGeometry();
-        RecalculateIsoDirections();
-        SetBodyVisible(true);
-        ApplyCrouchStateImmediate();
+        EnsureFootstepAudioSource();
+        TryResolveFootstepClip();
+        ApplyFirstPersonStateImmediate();
     }
 
-    void Update()
+    private void OnEnable()
     {
-        if (isTransitioning)
+        ApplyFirstPersonStateImmediate();
+        footstepTimer = 0f;
+    }
+
+    private void OnDisable()
+    {
+        if (footstepAudioSource != null)
         {
-            inputDirection = Vector3.zero;
-            isRunning = false;
-
-            if (animator != null)
-            {
-                animator.SetFloat("VelX", 0f);
-                animator.SetFloat("VelY", 0f);
-            }
-
-            UpdateCrouchState(Time.deltaTime);
-            return;
+            footstepAudioSource.Stop();
         }
+    }
 
+    private void Update()
+    {
+        ResolveFpsCamera();
         HandleCrouchInput();
 
-        float h = Input.GetAxis("Horizontal");
-        float v = Input.GetAxis("Vertical");
+        float horizontal = Input.GetAxis("Horizontal");
+        float vertical = Input.GetAxis("Vertical");
 
-        Vector3 direction = isFPS
-            ? GetFpsMoveDirection(h, v)
-            : GetIsometricMoveDirection(h, v);
-
-        inputDirection = Vector3.ClampMagnitude(direction, 1f);
-        isRunning = ShouldRun(h, v);
+        inputDirection = Vector3.ClampMagnitude(GetFpsMoveDirection(horizontal, vertical), 1f);
+        isRunning = inputDirection.sqrMagnitude > 0.01f && ShouldRun(horizontal, vertical);
 
         if (animator != null)
         {
-            animator.SetFloat("VelX", h);
-            animator.SetFloat("VelY", v);
-        }
-
-        if (!isFPS && inputDirection.sqrMagnitude >= 0.01f)
-        {
-            desiredRotation = Quaternion.Slerp(
-                rb.rotation,
-                Quaternion.LookRotation(inputDirection),
-                rotationSpeed * Time.deltaTime
-            );
-
-            hasDesiredRotation = true;
+            animator.SetFloat("VelX", horizontal);
+            animator.SetFloat("VelY", vertical);
         }
 
         UpdateCrouchState(Time.deltaTime);
+        UpdateFootsteps(Time.deltaTime);
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        if (isTransitioning) return;
+        if (rb == null)
+        {
+            return;
+        }
 
         if (inputDirection.sqrMagnitude >= 0.01f)
         {
@@ -146,124 +138,54 @@ public class PlayerMovemnt : MonoBehaviour
 
     public void EnterFPS()
     {
-        if (transitionCoroutine != null)
-            StopCoroutine(transitionCoroutine);
-
-        transitionCoroutine = StartCoroutine(EnterFPSRoutine());
+        ApplyFirstPersonStateImmediate();
     }
 
     public void ExitFPS()
     {
-        if (transitionCoroutine != null)
-            StopCoroutine(transitionCoroutine);
-
-        transitionCoroutine = StartCoroutine(ExitFPSRoutine());
+        ApplyFirstPersonStateImmediate();
     }
 
-    private IEnumerator EnterFPSRoutine()
+    private void ApplyFirstPersonStateImmediate()
     {
-        isTransitioning = true;
-        inputDirection = Vector3.zero;
-        isRunning = false;
-
-        if (animator != null)
-        {
-            animator.SetFloat("VelX", 0f);
-            animator.SetFloat("VelY", 0f);
-        }
-
-        SetBodyVisible(true);
-
-        yield return new WaitForSeconds(enterFPSTransitionDuration);
-
         isFPS = true;
         ResolveFpsCamera();
         SetBodyVisible(false);
         ApplyCrouchStateImmediate();
-
-        isTransitioning = false;
-        transitionCoroutine = null;
-    }
-
-    private IEnumerator ExitFPSRoutine()
-    {
-        isTransitioning = true;
-        inputDirection = Vector3.zero;
-        isRunning = false;
-
-        if (animator != null)
-        {
-            animator.SetFloat("VelX", 0f);
-            animator.SetFloat("VelY", 0f);
-        }
-
-        SetBodyVisible(true);
-
-        yield return new WaitForSeconds(exitFPSTransitionDuration);
-
-        isFPS = false;
-
-        Vector3 euler = rb.rotation.eulerAngles;
-        Quaternion flatRotation = Quaternion.Euler(0f, euler.y, 0f);
-        rb.MoveRotation(flatRotation);
-
-        RecalculateIsoDirections();
-        ApplyCrouchStateImmediate();
-
-        isTransitioning = false;
-        transitionCoroutine = null;
     }
 
     private void SetBodyVisible(bool visible)
     {
-        if (bodyRenderers == null || bodyRenderers.Length == 0) return;
+        if (bodyRenderers == null || bodyRenderers.Length == 0)
+        {
+            return;
+        }
 
         foreach (Renderer rend in bodyRenderers)
         {
-            if (rend == null) continue;
+            if (rend == null)
+            {
+                continue;
+            }
 
             if (visible)
             {
                 rend.enabled = true;
                 rend.shadowCastingMode = ShadowCastingMode.On;
             }
+            else if (keepShadows)
+            {
+                rend.enabled = true;
+                rend.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+            }
             else
             {
-                if (keepShadows)
-                {
-                    rend.enabled = true;
-                    rend.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
-                }
-                else
-                {
-                    rend.enabled = false;
-                }
+                rend.enabled = false;
             }
         }
     }
 
-    private void RecalculateIsoDirections()
-    {
-        Transform viewTransform = ResolveGameplayCamera();
-
-        if (viewTransform == null)
-        {
-            forward = GetPlanarDirection(transform.forward);
-            right = GetPlanarDirection(transform.right);
-            return;
-        }
-
-        forward = GetPlanarDirection(viewTransform.forward);
-        right = GetPlanarDirection(viewTransform.right);
-
-        if (forward.sqrMagnitude <= 0.0001f)
-            forward = GetPlanarDirection(transform.forward);
-
-        if (right.sqrMagnitude <= 0.0001f)
-            right = GetPlanarDirection(transform.right);
-    }
-
-    private Vector3 GetFpsMoveDirection(float h, float v)
+    private Vector3 GetFpsMoveDirection(float horizontal, float vertical)
     {
         Transform viewTransform = ResolveFpsCamera();
 
@@ -276,42 +198,32 @@ public class PlayerMovemnt : MonoBehaviour
             : GetPlanarDirection(transform.right);
 
         RotateBodyTowards(lookForward);
-
-        return lookForward * v + lookRight * h;
-    }
-
-    private Vector3 GetIsometricMoveDirection(float h, float v)
-    {
-        RecalculateIsoDirections();
-        return right * h + forward * v;
+        return lookForward * vertical + lookRight * horizontal;
     }
 
     private void RotateBodyTowards(Vector3 lookDirection)
     {
-        if (lookDirection.sqrMagnitude <= 0.0001f)
+        if (lookDirection.sqrMagnitude <= 0.0001f || rb == null)
+        {
             return;
+        }
 
         Quaternion targetRotation = Quaternion.LookRotation(lookDirection);
         float angle = Quaternion.Angle(rb.rotation, targetRotation);
-
         if (angle <= turnDeadZone)
+        {
             return;
+        }
 
         desiredRotation = Quaternion.Slerp(
             rb.rotation,
             targetRotation,
-            bodyTurnSpeed * Time.deltaTime
-        );
-
+            bodyTurnSpeed * Time.deltaTime);
         hasDesiredRotation = true;
     }
 
     private Transform ResolveGameplayCamera()
     {
-        Camera mainCamera = Camera.main;
-        if (mainCamera != null)
-            return mainCamera.transform;
-
         return ResolveFpsCamera();
     }
 
@@ -319,12 +231,10 @@ public class PlayerMovemnt : MonoBehaviour
     {
         if (fpsCamera != null && fpsCamera != transform)
         {
-            if (fpsCamera.GetComponent<Camera>() != null)
+            if (fpsCamera.GetComponent<Camera>() != null || fpsCamera.IsChildOf(transform))
+            {
                 return fpsCamera;
-
-            Camera fallbackCamera = Camera.main;
-            if (fallbackCamera == null)
-                return fpsCamera;
+            }
         }
 
         Camera mainCamera = Camera.main;
@@ -355,14 +265,14 @@ public class PlayerMovemnt : MonoBehaviour
         isRunning = false;
     }
 
-    private bool ShouldRun(float h, float v)
+    private bool ShouldRun(float horizontal, float vertical)
     {
         if (isCrouching || !Input.GetKey(runKey))
         {
             return false;
         }
 
-        return new Vector2(h, v).sqrMagnitude > 0.01f;
+        return new Vector2(horizontal, vertical).sqrMagnitude > 0.01f;
     }
 
     private float GetMovementSpeedMultiplier()
@@ -378,6 +288,89 @@ public class PlayerMovemnt : MonoBehaviour
         }
 
         return 1f;
+    }
+
+    private void EnsureFootstepAudioSource()
+    {
+        if (footstepAudioSource != null)
+        {
+            return;
+        }
+
+        footstepAudioSource = GetComponent<AudioSource>();
+        if (footstepAudioSource == null)
+        {
+            footstepAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        footstepAudioSource.playOnAwake = false;
+        footstepAudioSource.loop = false;
+        footstepAudioSource.spatialBlend = 0f;
+        footstepAudioSource.dopplerLevel = 0f;
+        footstepAudioSource.volume = footstepVolume;
+    }
+
+    private void TryResolveFootstepClip()
+    {
+        if (footstepClip != null || string.IsNullOrWhiteSpace(footstepResourceName))
+        {
+            return;
+        }
+
+        footstepClip = Resources.Load<AudioClip>(footstepResourceName.Trim());
+    }
+
+    private void UpdateFootsteps(float deltaTime)
+    {
+        if (!CanPlayFootsteps())
+        {
+            footstepTimer = 0f;
+            return;
+        }
+
+        footstepTimer -= deltaTime;
+        if (footstepTimer > 0f)
+        {
+            return;
+        }
+
+        PlayFootstep();
+        footstepTimer = GetFootstepInterval();
+    }
+
+    private bool CanPlayFootsteps()
+    {
+        return Time.timeScale > 0f
+            && footstepAudioSource != null
+            && footstepClip != null
+            && inputDirection.sqrMagnitude > 0.01f;
+    }
+
+    private float GetFootstepInterval()
+    {
+        if (isCrouching)
+        {
+            return Mathf.Max(0.12f, crouchFootstepInterval);
+        }
+
+        if (isRunning)
+        {
+            return Mathf.Max(0.1f, runFootstepInterval);
+        }
+
+        return Mathf.Max(0.12f, walkFootstepInterval);
+    }
+
+    private void PlayFootstep()
+    {
+        if (footstepAudioSource == null || footstepClip == null)
+        {
+            return;
+        }
+
+        footstepAudioSource.volume = footstepVolume;
+        footstepAudioSource.pitch = 1f + Random.Range(-footstepPitchVariance, footstepPitchVariance);
+        footstepAudioSource.PlayOneShot(footstepClip);
     }
 
     private void ResolveCrouchViewTarget()
@@ -541,9 +534,10 @@ public class PlayerMovemnt : MonoBehaviour
     private static Vector3 GetPlanarDirection(Vector3 vector)
     {
         vector.y = 0f;
-
         if (vector.sqrMagnitude > 0.0001f)
+        {
             vector.Normalize();
+        }
 
         return vector;
     }

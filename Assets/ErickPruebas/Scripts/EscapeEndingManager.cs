@@ -129,13 +129,6 @@ public class EscapeEndingManager : MonoBehaviour
     private void RestartScene()
     {
         isEndingActive = false;
-        AudioListener.pause = false;
-        Time.timeScale = 1f;
-
-        Scene currentScene = SceneManager.GetActiveScene();
-        if (!string.IsNullOrEmpty(currentScene.name))
-        {
-            SceneManager.LoadScene(currentScene.name);
-        }
+        GameSessionRestart.RestartCurrentScene();
     }
 }

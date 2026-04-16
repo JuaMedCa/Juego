@@ -751,7 +751,9 @@ public class NotesMenuUI : MonoBehaviour
 
         slot.Title.color = note.Collected ? discoveredTextColor : pendingTextColor;
         slot.Status.color = note.Collected ? discoveredAccentColor : pendingAccentColor;
-        slot.Title.text = note.DisplayName;
+        slot.Title.text = string.IsNullOrWhiteSpace(note.DisplayName)
+            ? $"Documento {note.Order:00}"
+            : note.DisplayName;
         slot.Status.text = note.Collected ? note.PreviewText : "Pendiente por inspeccionar";
         slot.Status.enableWordWrapping = true;
         slot.Status.overflowMode = TextOverflowModes.Ellipsis;
@@ -795,7 +797,7 @@ public class NotesMenuUI : MonoBehaviour
 
         slot.Title.color = pendingTextColor;
         slot.Status.color = pendingAccentColor;
-        slot.Title.text = $"Expediente {index:00}";
+        slot.Title.text = $"Documento {index:00}";
         slot.Status.text = "Sin registro";
         if (slot.Button != null)
         {

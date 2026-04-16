@@ -12,6 +12,7 @@ public class MapSystem : MonoBehaviour
     [SerializeField] private string mapDisplayName = "Mapa";
     [SerializeField] private int mapPoints = 0;
     [SerializeField] private float pickupMessageDuration = 1.5f;
+    [SerializeField] private float tutorialMessageDuration = 3f;
 
     private MapPickup currentMap;
     private bool hasMap = false;
@@ -83,7 +84,14 @@ public class MapSystem : MonoBehaviour
 
         if (MessageSystem.instance != null)
         {
-            MessageSystem.instance.ShowMessage(mapDisplayName + " obtenido", pickupMessageDuration);
+            if (GameplayRunState.TryConsumeMapPickupHint())
+            {
+                MessageSystem.instance.ShowTypewriterMessage("Presiona M para abrir el mapa.", tutorialMessageDuration, 0.02f);
+            }
+            else
+            {
+                MessageSystem.instance.ShowMessage(mapDisplayName + " obtenido", pickupMessageDuration);
+            }
         }
 
         Destroy(currentMap.gameObject);
@@ -101,6 +109,17 @@ public class MapSystem : MonoBehaviour
 
         Cursor.lockState = mapOpen ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = mapOpen;
+
+        if (mapOpen)
+        {
+            GameplayRunState.RegisterFirstMapOpen();
+            return;
+        }
+
+        if (GameplayRunState.TryConsumeFirstMapCloseInsight() && MessageSystem.instance != null)
+        {
+            MessageSystem.instance.ShowTypewriterMessage("Los puntos rosas del mapa parecen marcar los otros bidones.", 3.4f, 0.022f);
+        }
     }
 
     private void ResolveMapCamera()
