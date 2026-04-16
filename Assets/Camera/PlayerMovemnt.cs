@@ -39,19 +39,21 @@ public class PlayerMovemnt : MonoBehaviour
     public float exitFPSTransitionDuration = 0f;
 
     [Header("Footsteps")]
-    [SerializeField] private AudioClip footstepClip;
-    [SerializeField] private string footstepResourceName = "Taps";
+    [SerializeField] private string walkFootstepsResourceFolder = "Footsteps/Walk";
+    [SerializeField] private string runFootstepsResourceFolder = "Footsteps/Run";
     [SerializeField] private float walkFootstepInterval = 0.46f;
     [SerializeField] private float runFootstepInterval = 0.29f;
-    [SerializeField] private float crouchFootstepInterval = 0.64f;
-    [SerializeField, Range(0f, 1f)] private float footstepVolume = 0.22f;
-    [SerializeField, Range(0f, 0.3f)] private float footstepPitchVariance = 0.05f;
+    [SerializeField] private float crouchFootstepInterval = 0.62f;
+    [SerializeField, Range(0f, 1f)] private float footstepVolume = 0.26f;
+    [SerializeField, Range(0f, 0.3f)] private float footstepPitchVariance = 0.04f;
 
     private Animator animator;
     private Rigidbody rb;
     private CapsuleCollider capsuleCollider;
     private Transform resolvedCrouchViewTarget;
     private AudioSource footstepAudioSource;
+    private AudioClip[] walkFootstepClips = System.Array.Empty<AudioClip>();
+    private AudioClip[] runFootstepClips = System.Array.Empty<AudioClip>();
     private Vector3 inputDirection;
     private Quaternion desiredRotation;
     private bool hasDesiredRotation;
@@ -77,7 +79,7 @@ public class PlayerMovemnt : MonoBehaviour
         ResolveCrouchViewTarget();
         CacheStandingGeometry();
         EnsureFootstepAudioSource();
-        TryResolveFootstepClip();
+        LoadFootstepClips();
         ApplyFirstPersonStateImmediate();
     }
 
@@ -297,7 +299,7 @@ public class PlayerMovemnt : MonoBehaviour
             return;
         }
 
-        footstepAudioSource = GetComponent<AudioSource>();
+        footstepAudioSource = gameObject.GetComponent<AudioSource>();
         if (footstepAudioSource == null)
         {
             footstepAudioSource = gameObject.AddComponent<AudioSource>();
@@ -310,14 +312,17 @@ public class PlayerMovemnt : MonoBehaviour
         footstepAudioSource.volume = footstepVolume;
     }
 
-    private void TryResolveFootstepClip()
+    private void LoadFootstepClips()
     {
-        if (footstepClip != null || string.IsNullOrWhiteSpace(footstepResourceName))
+        if (walkFootstepClips.Length == 0 && !string.IsNullOrWhiteSpace(walkFootstepsResourceFolder))
         {
-            return;
+            walkFootstepClips = Resources.LoadAll<AudioClip>(walkFootstepsResourceFolder.Trim());
         }
 
-        footstepClip = Resources.Load<AudioClip>(footstepResourceName.Trim());
+        if (runFootstepClips.Length == 0 && !string.IsNullOrWhiteSpace(runFootstepsResourceFolder))
+        {
+            runFootstepClips = Resources.LoadAll<AudioClip>(runFootstepsResourceFolder.Trim());
+        }
     }
 
     private void UpdateFootsteps(float deltaTime)
@@ -342,15 +347,15 @@ public class PlayerMovemnt : MonoBehaviour
     {
         return Time.timeScale > 0f
             && footstepAudioSource != null
-            && footstepClip != null
-            && inputDirection.sqrMagnitude > 0.01f;
+            && inputDirection.sqrMagnitude > 0.01f
+            && (walkFootstepClips.Length > 0 || runFootstepClips.Length > 0);
     }
 
     private float GetFootstepInterval()
     {
         if (isCrouching)
         {
-            return Mathf.Max(0.12f, crouchFootstepInterval);
+            return Mathf.Max(0.14f, crouchFootstepInterval);
         }
 
         if (isRunning)
@@ -358,19 +363,39 @@ public class PlayerMovemnt : MonoBehaviour
             return Mathf.Max(0.1f, runFootstepInterval);
         }
 
-        return Mathf.Max(0.12f, walkFootstepInterval);
+        return Mathf.Max(0.14f, walkFootstepInterval);
     }
 
     private void PlayFootstep()
     {
-        if (footstepAudioSource == null || footstepClip == null)
+        if (footstepAudioSource == null)
+        {
+            return;
+        }
+
+        AudioClip clip = GetRandomFootstepClip();
+        if (clip == null)
         {
             return;
         }
 
         footstepAudioSource.volume = footstepVolume;
         footstepAudioSource.pitch = 1f + Random.Range(-footstepPitchVariance, footstepPitchVariance);
-        footstepAudioSource.PlayOneShot(footstepClip);
+        footstepAudioSource.PlayOneShot(clip);
+    }
+
+    private AudioClip GetRandomFootstepClip()
+    {
+        AudioClip[] source = isRunning && runFootstepClips.Length > 0
+            ? runFootstepClips
+            : walkFootstepClips;
+
+        if (source == null || source.Length == 0)
+        {
+            return null;
+        }
+
+        return source[Random.Range(0, source.Length)];
     }
 
     private void ResolveCrouchViewTarget()

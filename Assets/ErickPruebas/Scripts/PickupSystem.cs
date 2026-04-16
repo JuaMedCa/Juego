@@ -162,17 +162,14 @@ public class PickupSystem : MonoBehaviour
             ObjectiveSystem.Instance.RegisterFuelPickup(item.ItemId);
         }
 
-        if (useMessageSystem && MessageSystem.instance != null)
+        if (item.IsFuelPickup && GameplayRunState.TryConsumeFirstFuelThought())
         {
-            if (item.IsFuelPickup && GameplayRunState.TryConsumeFirstFuelThought())
-            {
-                MessageSystem.instance.ShowTypewriterMessage("Deberia haber mas por aqui...", 3.2f, 0.024f);
-            }
-            else
-            {
-                int newCount = InventoryManager.Instance.GetItemCount(item.ItemId);
-                MessageSystem.instance.ShowMessage($"{item.DisplayName} x{newCount}", pickupMessageDuration);
-            }
+            TutorialHintOverlay.ShowHint("Deberia haber mas por aqui...", 3.2f);
+        }
+        else if (useMessageSystem && MessageSystem.instance != null)
+        {
+            int newCount = InventoryManager.Instance.GetItemCount(item.ItemId);
+            MessageSystem.instance.ShowMessage($"{item.DisplayName} x{newCount}", pickupMessageDuration);
         }
 
         nearbyItems.Remove(item);

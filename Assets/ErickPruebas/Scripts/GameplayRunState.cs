@@ -8,6 +8,7 @@ public static class GameplayRunState
     public static bool FirstMapOpenSeen { get; private set; }
     public static bool FirstMapCloseInsightShown { get; private set; }
     public static bool RunHintShown { get; private set; }
+    public static bool ReturnToCarHintShown { get; private set; }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     private static void Initialize()
@@ -23,6 +24,7 @@ public static class GameplayRunState
         FirstMapOpenSeen = false;
         FirstMapCloseInsightShown = false;
         RunHintShown = false;
+        ReturnToCarHintShown = false;
     }
 
     public static bool TryConsumeNotesTabHint()
@@ -88,6 +90,17 @@ public static class GameplayRunState
         }
 
         RunHintShown = true;
+        return true;
+    }
+
+    public static bool TryConsumeReturnToCarHint()
+    {
+        if (ReturnToCarHintShown)
+        {
+            return false;
+        }
+
+        ReturnToCarHintShown = true;
         return true;
     }
 }

@@ -12,6 +12,7 @@ public class FuelSequenceManager : MonoBehaviour
     [Header("Escape Icon")]
     [SerializeField] private bool revealEscapeVehicleOnFinalNote = true;
     [SerializeField] private Vector3 escapeIconOffset = new Vector3(0f, 80f, 0f);
+    [SerializeField] private float escapeIconScaleMultiplier = 1.75f;
     [SerializeField] private Color escapeIconColor = new Color(1f, 0.67f, 0.28f, 1f);
 
     private int currentIndex;
@@ -121,6 +122,7 @@ public class FuelSequenceManager : MonoBehaviour
         {
             iconRoot = Instantiate(template, jeepTransform.position + escapeIconOffset, template.transform.rotation);
             iconRoot.name = "EscapeVehicleIcon";
+            iconRoot.transform.localScale = template.transform.localScale * Mathf.Max(1f, escapeIconScaleMultiplier);
 
             MonoBehaviour[] behaviours = iconRoot.GetComponents<MonoBehaviour>();
             for (int i = 0; i < behaviours.Length; i++)
@@ -134,7 +136,7 @@ public class FuelSequenceManager : MonoBehaviour
             iconRoot.name = "EscapeVehicleIcon";
             Destroy(iconRoot.GetComponent<Collider>());
             iconRoot.transform.position = jeepTransform.position + escapeIconOffset;
-            iconRoot.transform.localScale = Vector3.one * 18f;
+            iconRoot.transform.localScale = Vector3.one * 18f * Mathf.Max(1f, escapeIconScaleMultiplier);
         }
 
         ApplyIconColor(iconRoot);
